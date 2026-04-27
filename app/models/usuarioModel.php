@@ -7,9 +7,9 @@ class usuarioModel {
     }
 
     public function getByEmail(string $email) {
-        $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE email = :email LIMIT 1");
-        $stmt->execute(['email' => $email]);
-        return $stmt->fetch();
+    $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE email = :email LIMIT 1");
+    $stmt->execute(['email' => $email]);
+    return $stmt->fetch();
     }
 
     public function getById(int $id) {
