@@ -1,19 +1,29 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'sistema_escolar');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+
+// Dados de acesso ao banco
+$host   = 'localhost';
+$dbname = 'sistema_escolar';
+$user   = 'root';
+$pass   = '';
+
+// Opcoes de comportamento do banco
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Mostra erros
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // Retorna array simples
+    PDO::ATTR_EMULATE_PREPARES   => false, // Seguranca extra
+];
 
 try {
+    // Cria a conexao PDO
     $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-        DB_USER,
-        DB_PASS,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]
+        "mysql:host={$host};dbname={$dbname};charset=utf8mb4",
+        $user,
+        $pass,
+        $options
     );
-} catch (Exception $e) {
-    die("Erro de conexão: " . $e->getMessage());
+
+} catch (PDOException $e) {
+    // Se der erro, para o site e avisa
+    http_response_code(500);
+    exit('Erro ao conectar ao banco de dados.');
 }

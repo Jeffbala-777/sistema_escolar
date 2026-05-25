@@ -1,77 +1,81 @@
 <?php
+declare(strict_types=1); // Forca tipagem estrita
+
+// Verifica se o aluno esta logado
 require_once __DIR__ . '/../app/middleware/verificar_aluno.php';
-require_once __DIR__ . '/../app/models/NotaModel.php';
-require_once __DIR__ . '/../app/models/FaltaModel.php';
+require_once __DIR__ . '/../app/database/database.php'; // Conexao banco
+require_once __DIR__ . '/../app/models/NotasModel.php'; // Model de notas
+require_once __DIR__ . '/../app/models/PeriodoLetivoModel.php'; // Model de periodos
 
-$notaModel = new NotaModel($pdo);
-$faltaModel = new FaltaModel($pdo);
+$alunoId = $_SESSION['usuario']['id']; // ID do aluno
+$escolaId = $_SESSION['usuario']['escola_id']; // ID da escola
+$anoLetivoId = 1; // Ano padrao
 
-$aluno_id = (int)$_SESSION['usuario']['id'];
-$notas = $notaModel->getNotasAluno($aluno_id);
-$faltas_total = $faltaModel->contarFaltasAluno($aluno_id);
+$notasModel = new NotaModel($pdo); // Inicia models
+$periodoModel = new PeriodoLetivoModel($pdo);
 
-// ... (Mantenha a lógica de processamento $porMateria que já fizemos) ...
+// Busca periodos e boletim consolidado
+$periodos = $periodoModel->listarPorAno($anoLetivoId, $escolaId);
+$boletim = $notasModel->buscarNotasCompletasAluno($alunoId, $anoLetivoId);
+
+$title = 'Meu Boletim'; // Titulo da pagina
+require_once __DIR__ . '/../partials/header.php'; // Topo
 ?>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Boletim Online</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; font-family: sans-serif; }
-        .card-custom { border: 1px solid #dee2e6; border-radius: 0; }
-        .bg-gray-light { background-color: #f4f4f4; color: #333; }
-        .table thead { background-color: #f4f4f4; }
-    </style>
-</head>
-<body class="p-4">
 
-<!-- Card de Informações do Aluno (Visual da Foto) -->
-<div class="card card-custom shadow-sm mb-4">
-    <div class="card-header bg-gray-light fw-bold text-uppercase">Informações do Aluno</div>
-    <div class="card-body">
-        <p class="mb-1"><strong>Nome:</strong> <?= e($_SESSION['usuario']['nome_completo']) ?></p>
-        <p class="mb-1"><strong>Matrícula:</strong> <?= (int)$_SESSION['usuario']['id'] ?></p>
-        <p class="mb-0"><strong>Turma:</strong> <?= e($_SESSION['usuario']['turma_nome'] ?? 'Ensino Médio - 2ª Série') ?></p>
-    </div>
+<div class="d-flex">
+    <?php require_once __DIR__ . '/../partials/aluno_menu.php'; ?> <!-- Menu lateral -->
+
+    <main class="main-content flex-grow-1" style="background-color: #f8f9fa; min-height: 100vh;">
+        <?php require_once __DIR__ . '/../partials/top_panel.php'; ?> <!-- Topbar -->
+
+        <div class="p-4">
+            <div class="bg-white shadow-sm rounded p-4 mx-auto" style="max-width: 1100px;">
+                
+                <h4 class="fw-bold text-secondary text-center mb-4">Notas por Disciplina</h4>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle text-center small">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start py-3">Disciplina</th>
+                                <?php foreach ($periodos as $p): ?>
+                                    <th><?= e($p['nome']) ?></th> <!-- Nome do periodo (Bimestre/Trimestre) -->
+                                <?php endforeach; ?>
+                                <th>Média Final</th>
+                                <th>Situação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($boletim as $disciplina => $dados): 
+                                $soma = 0; $cont = 0;
+                            ?>
+                                <tr>
+                                    <td class="text-start fw-bold"><?= e($disciplina) ?></td>
+                                    <?php foreach ($periodos as $p): 
+                                        $n = $dados[$p['id']]['nota'] ?? '-';
+                                        if ($n !== '-') { $soma += (float)$n; $cont++; }
+                                    ?>
+                                        <td><?= $n ?></td> <!-- Nota do periodo -->
+                                    <?php endforeach; ?>
+                                    <?php $media = $cont > 0 ? round($soma / $cont, 1) : '-'; ?>
+                                    <td class="fw-bold"><?= $media ?></td> <!-- Media calculada -->
+                                    <td>
+                                        <?php if ($media !== '-'): ?>
+                                            <span class="badge bg-<?= $media >= 7 ? 'success' : 'warning' ?>">
+                                                <?= $media >= 7 ? 'Aprovado' : 'Recuperação' ?>
+                                            </span>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 
-<!-- Card do Boletim (Visual da Foto) -->
-<div class="card card-custom shadow-sm">
-    <div class="card-header bg-gray-light fw-bold text-uppercase">Boletins Escolares</div>
-    <div class="table-responsive">
-        <table class="table table-bordered mb-0">
-            <thead>
-                <tr>
-                    <th>Matéria</th>
-                    <th>B1</th>
-                    <th>B2</th>
-                    <th>B3</th>
-                    <th>B4</th>
-                    <th>Média</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($porMateria as $materia => $dados): ?>
-                <tr>
-                    <td><?= e($materia) ?></td>
-                    <td><?= $dados['notas'][1] ?? '-' ?></td>
-                    <td><?= $dados['notas'][2] ?? '-' ?></td>
-                    <td><?= $dados['notas'][3] ?? '-' ?></td>
-                    <td><?= $dados['notas'][4] ?? '-' ?></td>
-                    <td class="fw-bold"><?= e($dados['media']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Botões de Ação Centralizados -->
-<div class="footer-actions">
-    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm px-4">Voltar</a>
-</div>
-
-</body>
-</html>
+<?php require_once __DIR__ . '/../partials/footer.php'; ?> <!-- Rodape -->
