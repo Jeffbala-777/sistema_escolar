@@ -1,0 +1,369 @@
+CREATE DATABASE IF NOT EXISTS sistema_escolar
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE sistema_escolar;
+
+CREATE TABLE escolas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  codigo VARCHAR(30) NOT NULL UNIQUE,
+  cnpj VARCHAR(20) NULL UNIQUE,
+  cidade VARCHAR(80) NULL,
+  estado VARCHAR(30) NULL,
+  logo VARCHAR(255) NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE anos_letivos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  ano YEAR NOT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  inicio DATE NULL,
+  fim DATE NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_ano_escola (escola_id, ano),
+  INDEX idx_anos_escola (escola_id),
+  CONSTRAINT fk_anos_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE periodos_letivos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(30) NOT NULL,
+  ordem TINYINT NOT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_periodo (escola_id, ano_letivo_id, ordem),
+  INDEX idx_periodos_escola (escola_id),
+  INDEX idx_periodos_ano (ano_letivo_id),
+  CONSTRAINT fk_periodos_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_periodos_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE perfis (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(30) NOT NULL UNIQUE,
+  nivel INT NOT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE usuarios (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  perfil_id INT UNSIGNED NOT NULL,
+  nome_completo VARCHAR(120) NOT NULL,
+  email VARCHAR(120) NOT NULL UNIQUE,
+  senha VARCHAR(255) NOT NULL,
+  cpf VARCHAR(20) NULL UNIQUE,
+  telefone VARCHAR(20) NULL,
+  nascimento DATE NULL,
+  foto VARCHAR(255) NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_usuarios_escola (escola_id),
+  INDEX idx_usuarios_perfil (perfil_id),
+  CONSTRAINT fk_usuarios_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_usuarios_perfil FOREIGN KEY (perfil_id) REFERENCES perfis(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE enderecos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  usuario_id INT UNSIGNED NOT NULL,
+  cep VARCHAR(15) NULL,
+  logradouro VARCHAR(120) NULL,
+  numero VARCHAR(20) NULL,
+  complemento VARCHAR(80) NULL,
+  bairro VARCHAR(80) NULL,
+  cidade VARCHAR(80) NULL,
+  estado VARCHAR(30) NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_end_escola (escola_id),
+  INDEX idx_end_usuario (usuario_id),
+  CONSTRAINT fk_end_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_end_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE responsaveis (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(120) NOT NULL,
+  cpf VARCHAR(20) NULL UNIQUE,
+  telefone VARCHAR(20) NULL,
+  email VARCHAR(120) NULL,
+  parentesco VARCHAR(50) NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_resp_escola (escola_id),
+  CONSTRAINT fk_resp_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE aluno_responsavel (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  aluno_id INT UNSIGNED NOT NULL,
+  responsavel_id INT UNSIGNED NOT NULL,
+  principal TINYINT(1) NOT NULL DEFAULT 0,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_aluno_resp (escola_id, aluno_id, responsavel_id),
+  INDEX idx_ar_escola (escola_id),
+  INDEX idx_ar_aluno (aluno_id),
+  INDEX idx_ar_responsavel (responsavel_id),
+  CONSTRAINT fk_ar_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_ar_aluno FOREIGN KEY (aluno_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_ar_responsavel FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE turmas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(50) NOT NULL,
+  serie VARCHAR(30) NULL,
+  turno ENUM('manhã','tarde','noite') NOT NULL DEFAULT 'manhã',
+  capacidade INT NOT NULL DEFAULT 40,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_turma (escola_id, ano_letivo_id, nome, turno),
+  INDEX idx_turmas_escola (escola_id),
+  INDEX idx_turmas_ano (ano_letivo_id),
+  CONSTRAINT fk_turmas_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_turmas_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE disciplinas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  nome VARCHAR(100) NOT NULL,
+  codigo VARCHAR(20) NULL,
+  carga_horaria INT NOT NULL DEFAULT 0,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_disciplina (escola_id, nome),
+  INDEX idx_disc_escola (escola_id),
+  CONSTRAINT fk_disc_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE matriculas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  aluno_id INT UNSIGNED NOT NULL,
+  turma_id INT UNSIGNED NOT NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  numero_matricula VARCHAR(30) NOT NULL,
+  data_matricula DATE NOT NULL,
+  status ENUM('ativa','transferida','cancelada','concluida') NOT NULL DEFAULT 'ativa',
+  observacao VARCHAR(255) NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_matricula (escola_id, numero_matricula),
+  UNIQUE KEY uk_matricula_aluno (escola_id, aluno_id, turma_id, ano_letivo_id),
+  INDEX idx_mat_escola (escola_id),
+  INDEX idx_mat_aluno (aluno_id),
+  INDEX idx_mat_turma (turma_id),
+  INDEX idx_mat_ano (ano_letivo_id),
+  CONSTRAINT fk_mat_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_mat_aluno FOREIGN KEY (aluno_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_mat_turma FOREIGN KEY (turma_id) REFERENCES turmas(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_mat_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE professor_turma_disciplina (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  professor_id INT UNSIGNED NOT NULL,
+  turma_id INT UNSIGNED NOT NULL,
+  disciplina_id INT UNSIGNED NOT NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  periodo_id INT UNSIGNED NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_prof_turma_disc (escola_id, professor_id, turma_id, disciplina_id, ano_letivo_id),
+  INDEX idx_ptd_escola (escola_id),
+  INDEX idx_ptd_professor (professor_id),
+  INDEX idx_ptd_turma (turma_id),
+  INDEX idx_ptd_disciplina (disciplina_id),
+  INDEX idx_ptd_ano (ano_letivo_id),
+  CONSTRAINT fk_ptd_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_ptd_prof FOREIGN KEY (professor_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_ptd_turma FOREIGN KEY (turma_id) REFERENCES turmas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_ptd_disc FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_ptd_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_ptd_periodo FOREIGN KEY (periodo_id) REFERENCES periodos_letivos(id)
+    ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE aulas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  professor_turma_disciplina_id INT UNSIGNED NOT NULL,
+  data_aula DATE NOT NULL,
+  conteudo TEXT NULL,
+  observacao TEXT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_aulas_escola (escola_id),
+  INDEX idx_aulas_ptd (professor_turma_disciplina_id),
+  CONSTRAINT fk_aulas_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_aulas_ptd FOREIGN KEY (professor_turma_disciplina_id) REFERENCES professor_turma_disciplina(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE presencas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  aula_id INT UNSIGNED NOT NULL,
+  aluno_id INT UNSIGNED NOT NULL,
+  status ENUM('presente','falta','justificada') NOT NULL DEFAULT 'falta',
+  observacao VARCHAR(255) NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_presenca (escola_id, aula_id, aluno_id),
+  INDEX idx_pres_escola (escola_id),
+  INDEX idx_pres_aula (aula_id),
+  INDEX idx_pres_aluno (aluno_id),
+  CONSTRAINT fk_pres_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_pres_aula FOREIGN KEY (aula_id) REFERENCES aulas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_pres_aluno FOREIGN KEY (aluno_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE notas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  aluno_id INT UNSIGNED NOT NULL,
+  disciplina_id INT UNSIGNED NOT NULL,
+  professor_id INT UNSIGNED NOT NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  periodo_id INT UNSIGNED NOT NULL,
+  tipo ENUM('prova','trabalho','recuperacao','final') NOT NULL DEFAULT 'prova',
+  nota DECIMAL(4,2) NOT NULL,
+  observacao VARCHAR(255) NULL,
+  data_lancamento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  data_ultima_edicao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_nota (escola_id, aluno_id, disciplina_id, ano_letivo_id, periodo_id, tipo),
+  INDEX idx_notas_escola (escola_id),
+  INDEX idx_notas_aluno (aluno_id),
+  INDEX idx_notas_disciplina (disciplina_id),
+  INDEX idx_notas_professor (professor_id),
+  INDEX idx_notas_ano (ano_letivo_id),
+  CONSTRAINT fk_notas_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_notas_aluno FOREIGN KEY (aluno_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_notas_disc FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_notas_prof FOREIGN KEY (professor_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_notas_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_notas_periodo FOREIGN KEY (periodo_id) REFERENCES periodos_letivos(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE faltas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  aluno_id INT UNSIGNED NOT NULL,
+  turma_id INT UNSIGNED NOT NULL,
+  disciplina_id INT UNSIGNED NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  periodo_id INT UNSIGNED NULL,
+  data_falta DATE NOT NULL,
+  status ENUM('presente','falta','justificada') NOT NULL DEFAULT 'falta',
+  observacao VARCHAR(255) NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_falta (escola_id, aluno_id, disciplina_id, ano_letivo_id, data_falta),
+  INDEX idx_faltas_escola (escola_id),
+  INDEX idx_faltas_aluno (aluno_id),
+  INDEX idx_faltas_turma (turma_id),
+  INDEX idx_faltas_ano (ano_letivo_id),
+  CONSTRAINT fk_faltas_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_faltas_aluno FOREIGN KEY (aluno_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_faltas_turma FOREIGN KEY (turma_id) REFERENCES turmas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_faltas_disc FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id)
+    ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT fk_faltas_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_faltas_periodo FOREIGN KEY (periodo_id) REFERENCES periodos_letivos(id)
+    ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE boletins (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  aluno_id INT UNSIGNED NOT NULL,
+  ano_letivo_id INT UNSIGNED NOT NULL,
+  media_geral DECIMAL(4,2) NOT NULL DEFAULT 0,
+  total_faltas INT NOT NULL DEFAULT 0,
+  status_final ENUM('aprovado','reprovado','em_analise') NOT NULL DEFAULT 'em_analise',
+  gerado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_boletim (escola_id, aluno_id, ano_letivo_id),
+  INDEX idx_boletins_escola (escola_id),
+  INDEX idx_boletins_aluno (aluno_id),
+  INDEX idx_boletins_ano (ano_letivo_id),
+  CONSTRAINT fk_boletins_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_boletins_aluno FOREIGN KEY (aluno_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_boletins_ano FOREIGN KEY (ano_letivo_id) REFERENCES anos_letivos(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+CREATE TABLE audit_log (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  usuario_id INT UNSIGNED NOT NULL,
+  acao VARCHAR(120) NOT NULL,
+  tabela_afetada VARCHAR(60) NULL,
+  registro_id INT UNSIGNED NULL,
+  detalhes TEXT NULL,
+  ip VARCHAR(45) NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_escola (escola_id),
+  INDEX idx_audit_usuario (usuario_id),
+  CONSTRAINT fk_audit_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_audit_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE configuracoes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  escola_id INT UNSIGNED NOT NULL,
+  chave VARCHAR(80) NOT NULL,
+  valor TEXT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_config (escola_id, chave),
+  INDEX idx_config_escola (escola_id),
+  CONSTRAINT fk_config_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
