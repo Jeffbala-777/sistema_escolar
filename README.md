@@ -1,2 +1,2 @@
-# sistema_escolar2
-Aquele tava uma bosta
+# Sistema Escolar
+Base para tcc
