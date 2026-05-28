@@ -13,9 +13,9 @@ function adminSupremoMenuAtivo($pagina) {
 <div class="sidebar" id="sidebarMenu">
     
     <!-- Titulo da sidebar -->
-    <div class="sidebar-title">
+    <!-- <div class="sidebar-title">
         Admin Supremo
-    </div>
+    </div> -->
 
     <!-- Informacoes do usuario logado se existirem -->
     <?php if (isset($_SESSION['usuario'])): ?>
@@ -49,12 +49,6 @@ function adminSupremoMenuAtivo($pagina) {
     <a class="<?= adminSupremoMenuAtivo('visualizar_dados.php') ?>" href="visualizar_dados.php">
         <i class="bi bi-search"></i>
         <span>Ver Dados</span>
-    </a>
-
-    <!-- Link para Logs de Auditoria e Seguranca -->
-    <a class="<?= adminSupremoMenuAtivo('logs.php') ?>" href="logs.php">
-        <i class="bi bi-shield-lock"></i>
-        <span>Logs</span>
     </a>
 
     <!-- Link para sair do sistema -->

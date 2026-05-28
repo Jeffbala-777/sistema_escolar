@@ -57,12 +57,12 @@ require_once __DIR__ . '/../partials/header.php';
                 <tbody>
                     <?php if ($matricula): ?>
                     <tr style="border-bottom: 1px solid #eee; color: #666;">
-                        <td style="padding: 15px 8px;"><?= e($_SESSION['usuario']['escola_nome'] ?? 'Escola Municipal') ?></td>
+                        <td style="padding: 15px 8px;"><?= e($_SESSION['usuario']['escola_nome'] ?? 'Minha Escola') ?></td>
                         <td style="padding: 15px 8px;"><?= e($matricula['turma_nome']) ?></td>
                         <td style="padding: 15px 8px;"><?= e($matricula['serie']) ?></td>
                         <td style="padding: 15px 8px;"><?= e($matricula['ano_escolar']) ?></td>
                         <td style="padding: 15px 8px; text-align: center;">
-                            <a href="<?= base_url('aluno/boletim_detalhado.php') ?>" 
+                            <a href="<?= base_url('aluno/boletim_completo.php') ?>" 
                                style="background: #eee; border: 1px solid #ccc; color: #666; padding: 5px 15px; border-radius: 3px; text-decoration: none; font-size: 0.75rem; transition: all 0.2s;"
                                onmouseover="this.style.background='#e0e0e0'" 
                                onmouseout="this.style.background='#eee'">

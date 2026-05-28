@@ -15,9 +15,9 @@ function adminMenuAtivo($pagina)
 
 <div class="sidebar" id="sidebarMenu">
 
-    <div class="sidebar-title">
+    <!-- <div class="sidebar-title">
         Administração
-    </div>
+    </div> -->
 
     <?php if (isset($_SESSION['usuario'])): ?>
     <div class="sidebar-user-info">

@@ -26,32 +26,32 @@ require_once __DIR__ . '/../partials/header.php';
 
             <div class="dashboard-subtitle mb-4">
 
-                Gerencie turmas, notas, presença e diário de classe.
+                Gerencie suas turmas e consulte boletins.
 
             </div>
 
-            <div class="row g-4">
+            <div class="row g-3">
 
-                <div class="col-md-6 col-xl-3">
+                <div class="col-md-6">
 
                     <a
                         href="<?= base_url('professor/minhas_turmas.php') ?>"
                         class="text-decoration-none">
 
-                        <div class="dashboard-card">
+                        <div class="p-3 border rounded-2" style="background:#f8f9fa;cursor:pointer;transition:.2s ease;border-color:#dce3ea!important;">
 
-                            <div class="dashboard-card-icon bg-primary">
+                            <div style="display:flex;align-items:center;gap:12px;">
 
-                                <i class="bi bi-grid"></i>
+                                <i class="bi bi-grid" style="font-size:24px;color:#0E79EB;"></i>
 
-                            </div>
+                                <div>
 
-                            <div class="dashboard-card-title">
-                                Minhas Turmas
-                            </div>
+                                    <h6 class="mb-1" style="font-weight:600;color:#2F3740;">Minhas Turmas</h6>
 
-                            <div class="dashboard-card-text">
-                                Visualizar turmas vinculadas.
+                                    <p class="mb-0" style="font-size:13px;color:#6c757d;">Visualizar turmas vinculadas</p>
+
+                                </div>
+
                             </div>
 
                         </div>
@@ -60,82 +60,26 @@ require_once __DIR__ . '/../partials/header.php';
 
                 </div>
 
-                <div class="col-md-6 col-xl-3">
+                <div class="col-md-6">
 
                     <a
-                        href="<?= base_url('professor/lancar_notas.php') ?>"
+                        href="<?= base_url('professor/boletim.php') ?>"
                         class="text-decoration-none">
 
-                        <div class="dashboard-card">
+                        <div class="p-3 border rounded-2" style="background:#f8f9fa;cursor:pointer;transition:.2s ease;border-color:#dce3ea!important;">
 
-                            <div class="dashboard-card-icon bg-success">
+                            <div style="display:flex;align-items:center;gap:12px;">
 
-                                <i class="bi bi-journal-check"></i>
+                                <i class="bi bi-bar-chart" style="font-size:24px;color:#0E79EB;"></i>
 
-                            </div>
+                                <div>
 
-                            <div class="dashboard-card-title">
-                                Notas
-                            </div>
+                                    <h6 class="mb-1" style="font-weight:600;color:#2F3740;">Boletins</h6>
 
-                            <div class="dashboard-card-text">
-                                Lançamento de avaliações.
-                            </div>
+                                    <p class="mb-0" style="font-size:13px;color:#6c757d;">Consultar desempenho geral</p>
 
-                        </div>
+                                </div>
 
-                    </a>
-
-                </div>
-
-                <div class="col-md-6 col-xl-3">
-
-                    <a
-                        href="<?= base_url('professor/lancar_faltas.php') ?>"
-                        class="text-decoration-none">
-
-                        <div class="dashboard-card">
-
-                            <div class="dashboard-card-icon bg-warning">
-
-                                <i class="bi bi-calendar-check"></i>
-
-                            </div>
-
-                            <div class="dashboard-card-title">
-                                Presença
-                            </div>
-
-                            <div class="dashboard-card-text">
-                                Controle de frequência.
-                            </div>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-                <div class="col-md-6 col-xl-3">
-
-                    <a
-                        href="<?= base_url('professor/boletim_turma.php') ?>"
-                        class="text-decoration-none">
-
-                        <div class="dashboard-card">
-
-                            <div class="dashboard-card-icon bg-info">
-
-                                <i class="bi bi-bar-chart"></i>
-
-                            </div>
-
-                            <div class="dashboard-card-title">
-                                Boletins
-                            </div>
-
-                            <div class="dashboard-card-text">
-                                Consultar desempenho.
                             </div>
 
                         </div>

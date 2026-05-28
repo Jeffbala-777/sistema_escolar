@@ -90,10 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['login_bloqueio'] = 0;
                 session_regenerate_id(true); // Nova sessao por seguranca
 
+                // Busca o nome da escola para salvar na sessao
+                $stmtEscola = $pdo->prepare("SELECT nome FROM escolas WHERE id = :id LIMIT 1");
+                $stmtEscola->execute([':id' => $user['escola_id']]);
+                $escolaNome = $stmtEscola->fetchColumn();
+
                 // Salva dados na sessao
                 $_SESSION['usuario'] = [
                     'id' => (int) $user['id'],
                     'escola_id' => (int) $user['escola_id'],
+                    'escola_nome' => $escolaNome ?: 'Minha Escola',
                     'nome_completo' => $user['nome_completo'],
                     'perfil_nome' => $user['perfil_nome'],
                     'email' => $user['email']

@@ -128,7 +128,7 @@ require_once __DIR__ . '/../partials/header.php'; // Topo padrao
                                             <td><?= e($u['telefone'] ?? '-') ?></td> <!-- Telefone -->
                                             <td class="text-center">
                                                 <div class="btn-group"> <!-- Botoes de acao -->
-                                                    <button class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></button>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Editar" onclick="alert('Função de edição será implementada em breve.')"><i class="bi bi-pencil"></i></button>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Deletar permanentemente?')">
                                                         <input type="hidden" name="acao" value="deletar_permanente">
                                                         <input type="hidden" name="id" value="<?= $u['id'] ?>">

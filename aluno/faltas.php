@@ -8,7 +8,17 @@ require_once __DIR__ . '/../app/models/FaltaModel.php'; // Model de faltas
 
 $alunoId = $_SESSION['usuario']['id']; // ID do aluno
 $escolaId = $_SESSION['usuario']['escola_id']; // ID da escola
-$anoLetivoId = 1; // Ano padrao
+
+// Busca o ano letivo ativo do aluno via matricula
+$stmtAno = $pdo->prepare("
+    SELECT ano_letivo_id
+    FROM matriculas
+    WHERE aluno_id = :aid
+    AND status = 'ativa'
+    LIMIT 1
+");
+$stmtAno->execute([':aid' => $alunoId]);
+$anoLetivoId = (int) ($stmtAno->fetchColumn() ?: 1);
 
 $faltaModel = new FaltaModel($pdo); // Inicia model
 

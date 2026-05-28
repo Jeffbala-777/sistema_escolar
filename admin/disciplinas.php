@@ -61,14 +61,15 @@ require_once __DIR__ . '/../partials/header.php';
 
                 </div>
 
-                <a
-                    href="<?= base_url('admin/cadastrar_disciplina.php'); ?>"
-                    class="btn btn-primary btn-sm">
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    onclick="alert('Função de cadastro de disciplina será implementada em breve.')">
 
                     <i class="bi bi-plus-circle"></i>
                     Nova Disciplina
 
-                </a>
+                </button>
 
             </div>
 

@@ -5,38 +5,114 @@ $title = 'Dashboard Admin';
 require_once __DIR__ . '/../partials/header.php'; // Topo
 ?>
 
-<?php require_once __DIR__ . '/../partials/top_panel.php'; ?> <!-- Painel superior -->
-<?php require_once __DIR__ . '/../partials/admin_sidebar.php'; ?> <!-- Menu lateral -->
+<div class="d-flex page-wrap">
 
-<div class="main-content">
-    <div class="cards-grid">
-        <!-- Card de Alunos (Escolhe turma primeiro) -->
-        <a href="alunos.php" style="text-decoration: none; color: inherit;">
-            <div class="dashboard-card">
-                <div class="circle-icon"><i class="bi bi-people"></i></div>
-                <h5>Alunos</h5>
-                <p>Gerencie alunos por turma.</p>
-            </div>
-        </a>
+    <?php require_once __DIR__ . '/../partials/admin_sidebar.php'; ?> <!-- Menu lateral -->
 
-        <!-- Card de Professores -->
-        <a href="professores.php" style="text-decoration: none; color: inherit;">
-            <div class="dashboard-card">
-                <div class="circle-icon"><i class="bi bi-mortarboard"></i></div>
-                <h5>Professores</h5>
-                <p>Gerencie os docentes.</p>
-            </div>
-        </a>
+    <div class="content-area p-4">
 
-        <!-- Card de Turmas -->
-        <a href="turmas.php" style="text-decoration: none; color: inherit;">
-            <div class="dashboard-card">
-                <div class="circle-icon"><i class="bi bi-grid"></i></div>
-                <h5>Turmas</h5>
-                <p>Organização das turmas.</p>
+        <?php require_once __DIR__ . '/../partials/top_panel.php'; ?> <!-- Painel superior -->
+
+        <div class="page-card p-4">
+
+            <div class="dashboard-title mb-2">
+
+                Painel Administrativo
+
             </div>
-        </a>
+
+            <div class="dashboard-subtitle mb-4">
+
+                Gerencie alunos, professores, turmas e disciplinas.
+
+            </div>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <a href="alunos.php" class="text-decoration-none">
+
+                        <div class="p-3 border rounded-2" style="background:#f8f9fa;cursor:pointer;transition:.2s ease;border-color:#dce3ea!important;">
+
+                            <div style="display:flex;align-items:center;gap:12px;">
+
+                                <i class="bi bi-people" style="font-size:24px;color:#0E79EB;"></i>
+
+                                <div>
+
+                                    <h6 class="mb-1" style="font-weight:600;color:#2F3740;">Alunos</h6>
+
+                                    <p class="mb-0" style="font-size:13px;color:#6c757d;">Gerencie alunos</p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <a href="professores.php" class="text-decoration-none">
+
+                        <div class="p-3 border rounded-2" style="background:#f8f9fa;cursor:pointer;transition:.2s ease;border-color:#dce3ea!important;">
+
+                            <div style="display:flex;align-items:center;gap:12px;">
+
+                                <i class="bi bi-mortarboard" style="font-size:24px;color:#0E79EB;"></i>
+
+                                <div>
+
+                                    <h6 class="mb-1" style="font-weight:600;color:#2F3740;">Professores</h6>
+
+                                    <p class="mb-0" style="font-size:13px;color:#6c757d;">Gerencie docentes</p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <a href="turmas.php" class="text-decoration-none">
+
+                        <div class="p-3 border rounded-2" style="background:#f8f9fa;cursor:pointer;transition:.2s ease;border-color:#dce3ea!important;">
+
+                            <div style="display:flex;align-items:center;gap:12px;">
+
+                                <i class="bi bi-grid" style="font-size:24px;color:#0E79EB;"></i>
+
+                                <div>
+
+                                    <h6 class="mb-1" style="font-weight:600;color:#2F3740;">Turmas</h6>
+
+                                    <p class="mb-0" style="font-size:13px;color:#6c757d;">Organização das turmas</p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
+
 </div>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?> <!-- Rodape -->

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../app/middleware/verificar_professor.php';
 require_once __DIR__ . '/../app/database/database.php';
-require_once __DIR__ . '/../app/models/notaModel.php';
+require_once __DIR__ . '/../app/models/NotasModel.php';
 
 $title = 'Lançar Notas';
 
@@ -18,24 +18,38 @@ $stmt->execute([$alunoId]);
 $aluno = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $mensagem = '';
+$erro = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $model = new NotaModel($pdo);
+    try {
 
-    $model->salvar([
-        'escola_id' => $usuario['escola_id'],
-        'aluno_id' => $alunoId,
-        'disciplina_id' => $disciplinaId,
-        'professor_id' => $usuario['id'],
-        'ano_letivo_id' => $anoLetivoId,
-        'periodo_id' => 1,
-        'tipo' => 'prova',
-        'nota' => $_POST['nota'],
-        'observacao' => $_POST['observacao']
-    ]);
+        $model = new NotaModel($pdo);
 
-    $mensagem = 'Nota lançada com sucesso.';
+        $nota = (float) ($_POST['nota'] ?? 0);
+
+        if ($nota < 0 || $nota > 10) {
+            throw new Exception('A nota deve ser entre 0 e 10.');
+        }
+
+        $model->salvar([
+            'escola_id' => $usuario['escola_id'],
+            'aluno_id' => $alunoId,
+            'disciplina_id' => $disciplinaId,
+            'professor_id' => $usuario['id'],
+            'ano_letivo_id' => $anoLetivoId,
+            'periodo_id' => (int) ($_POST['periodo_id'] ?? 1),
+            'tipo' => 'prova',
+            'nota' => $nota,
+            'observacao' => $_POST['observacao'] ?? ''
+        ]);
+
+        $mensagem = 'Nota lançada com sucesso.';
+
+    } catch (Exception $e) {
+
+        $erro = $e->getMessage();
+    }
 }
 
 require_once __DIR__ . '/../partials/header.php';
@@ -58,6 +72,12 @@ require_once __DIR__ . '/../partials/header.php';
         </div>
     <?php endif; ?>
 
+    <?php if ($erro): ?>
+        <div class="alert alert-danger">
+            <?= e($erro); ?>
+        </div>
+    <?php endif; ?>
+
     <form method="POST">
 
         <div class="mb-3">
@@ -67,6 +87,17 @@ require_once __DIR__ . '/../partials/header.php';
                 class="form-control"
                 value="<?= e($aluno['nome_completo']); ?>"
                 readonly>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Período</label>
+
+            <select name="periodo_id" class="form-select" required>
+                <option value="1">1º Bimestre</option>
+                <option value="2">2º Bimestre</option>
+                <option value="3">3º Bimestre</option>
+                <option value="4">4º Bimestre</option>
+            </select>
         </div>
 
         <div class="mb-3">

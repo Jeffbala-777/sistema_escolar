@@ -10,7 +10,6 @@ require_once __DIR__ . '/../app/models/AdminSupremoModel.php';
 
 $adminModel = new AdminSupremoModel($pdo); // Instancia o model com a conexao
 $stats = $adminModel->buscarKpisSaaS(); // Busca estatisticas globais (escolas/alunos)
-$logs = $adminModel->listarLogsRecentes(5); // Busca os 5 ultimos registros de log
 
 $title = 'Dashboard Admin Supremo'; // Define o titulo da pagina
 require_once __DIR__ . '/../partials/header.php'; // Inclui o topo do site
@@ -56,37 +55,7 @@ require_once __DIR__ . '/../partials/header.php'; // Inclui o topo do site
                 </div>
             </div>
 
-            <div class="row"> <!-- Linha para a tabela de logs -->
-                <div class="col-md-12">
-                    <div class="card shadow-sm border-0">
-                        <div class="card-header bg-white py-3">
-                            <h6 class="m-0 fw-bold">Atividades Recentes</h6> <!-- Titulo da tabela -->
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive"> <!-- Tabela responsiva para mobile -->
-                                <table class="table table-sm table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Usuário</th> <!-- Coluna nome -->
-                                            <th>Ação</th> <!-- Coluna o que fez -->
-                                            <th>Data/Hora</th> <!-- Coluna quando fez -->
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($logs as $log): ?> <!-- Percorre cada log encontrado -->
-                                            <tr>
-                                                <td><?= e($log['nome_completo']) ?></td> <!-- Nome do usuario logado -->
-                                                <td><span class="badge bg-light text-dark"><?= e($log['acao']) ?></span></td> <!-- Acao realizada -->
-                                                <td><small><?= date('d/m/Y H:i', strtotime($log['data_criacao'])) ?></small></td> <!-- Data formatada -->
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </div>
 </div>

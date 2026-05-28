@@ -15,9 +15,9 @@ function professorMenuAtivo($pagina)
 
 <div class="sidebar" id="sidebarMenu">
 
-    <div class="sidebar-title">
+    <!-- <div class="sidebar-title">
         Professor
-    </div>
+    </div> -->
 
     <?php if (isset($_SESSION['usuario'])): ?>
     <div class="sidebar-user-info">
@@ -45,31 +45,15 @@ function professorMenuAtivo($pagina)
     </a>
 
     <a
-        class="<?= professorMenuAtivo('alunos_turma.php') ?>"
-        href="<?= base_url('professor/alunos_turma.php') ?>">
+        class="<?= professorMenuAtivo('meus_alunos.php') ?>"
+        href="<?= base_url('professor/minhas_turmas.php') ?>">
 
         <i class="bi bi-people"></i>
-        Alunos
+        Meus Alunos
 
     </a>
 
-    <a
-        class="<?= professorMenuAtivo('lancar_notas_turma.php') ?>"
-        href="<?= base_url('professor/minhas_turmas.php') ?>">
 
-        <i class="bi bi-journal-check"></i>
-        Lançar Notas
-
-    </a>
-
-    <a
-        class="<?= professorMenuAtivo('lancar_faltas_turma.php') ?>"
-        href="<?= base_url('professor/minhas_turmas.php') ?>">
-
-        <i class="bi bi-calendar-check"></i>
-        Frequência
-
-    </a>
 
     <a href="<?= base_url('public/logout.php') ?>">
 

@@ -16,11 +16,12 @@ class ProfessorTurmaDisciplinaModel
     {
         $sql = "
             SELECT
-                ptd.id,
+                MIN(ptd.id) AS id,
+                t.id AS turma_id,
                 t.nome AS turma,
                 t.serie,
                 t.turno,
-                d.nome AS disciplina,
+                GROUP_CONCAT(DISTINCT d.nome ORDER BY d.nome SEPARATOR ', ') AS disciplina,
                 al.ano
 
             FROM professor_turma_disciplina ptd
@@ -38,6 +39,7 @@ class ProfessorTurmaDisciplinaModel
             AND ptd.escola_id = ?
             AND ptd.ativo = 1
 
+            GROUP BY t.id, t.nome, t.serie, t.turno, al.id, al.ano
             ORDER BY t.nome ASC
         ";
 

@@ -35,13 +35,14 @@ require_once __DIR__ . '/../partials/header.php';
                     Turmas da Escola
                 </div>
 
-                <a
-                    href="<?= base_url('admin/cadastrar_turma.php') ?>"
-                    class="btn btn-primary btn-sm">
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    onclick="alert('Função de cadastro de turma será implementada em breve.')">
 
                     Nova Turma
 
-                </a>
+                </button>
 
             </div>
 
