@@ -1,4 +1,4 @@
-w<?php
+<?php
 
 // Dados de acesso ao banco
 $host   = 'localhost';
