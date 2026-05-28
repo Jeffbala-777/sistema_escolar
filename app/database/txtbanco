@@ -64,7 +64,6 @@ CREATE TABLE `usuarios` (
   `cpf` varchar(20) DEFAULT NULL,
   `telefone` varchar(20) DEFAULT NULL,
   `nascimento` date DEFAULT NULL,
-  `foto` varchar(255) DEFAULT NULL,
   `ativo` tinyint(1) NOT NULL DEFAULT 1,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
@@ -274,4 +273,4 @@ CREATE TABLE `boletins` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `perfis` (`id`, `nome`, `nivel`) VALUES (1, 'admin_supremo', 100), (2, 'admin', 80), (3, 'professor', 50), (4, 'aluno', 10);
-INSERT INTO `usuarios` (`perfil_id`, `nome_completo`, `email`, `senha`, `ativo`) VALUES (1, 'Administrador Supremo', 'supremo@sistema.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
+INSERT INTO `usuarios` (`perfil_id`, `nome_completo`, `email`, `senha`, `ativo`) VALUES (1, 'Administrador Supremo', 'supremo@adm.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
