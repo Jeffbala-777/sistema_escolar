@@ -8,11 +8,16 @@ require_once __DIR__ . '/../config/config.php'; // ajuste o caminho se necessár
 class ResumoService {
 
     private $apiKey;
+    private $pdo;
 
-    public function __construct() {
+    public function __construct($pdo = null) {
+        $this->pdo = $pdo;
         $this->apiKey = GEMINI_API_KEY ?? null; // Pegando da config
         if (!$this->apiKey) {
             throw new Exception("Gemini API Key não configurada.");
+        }
+        if (!$this->pdo) {
+            throw new Exception("Conexão com banco de dados não fornecida.");
         }
     }
 
@@ -48,10 +53,11 @@ class ResumoService {
      * Busca histórico no banco (ajuste conforme sua model)
      */
     private function buscarHistoricoAluno($aluno_id) {
-        // Exemplo usando sua estrutura atual
-        global $pdo; // se você estiver usando PDO no config
+        if (!$this->pdo) {
+            throw new Exception("Conexão com banco de dados não disponível.");
+        }
 
-        $stmt = $pdo->prepare("
+        $stmt = $this->pdo->prepare("
             SELECT data, professor, texto 
             FROM historico_aluno 
             WHERE aluno_id = ? 

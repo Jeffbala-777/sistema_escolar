@@ -14,6 +14,8 @@ define('BASE_URL', '/sistema_escolar'); // Pasta no servidor
 define('APP_URL', 'http://localhost/sistema_escolar'); // URL completa
 define('SESSION_NAME', 'ERP_ESCOLAR_SESSION'); // Nome da sessao
 
+define('GEMINI_API_KEY', 'AQ.Ab8RN6JZfwBTTdMJLgfqVvYfKY-kqY94s_DwTUr3N9g1nxHiKA');
+
 // Configura fuso horario e codificacao
 date_default_timezone_set('America/Sao_Paulo');
 mb_internal_encoding('UTF-8');
