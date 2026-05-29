@@ -1,43 +1,42 @@
 <?php
-// Ativa tipagem estrita para garantir seguranca no tratamento de dados
+// Ativa tipagem estrita
 declare(strict_types=1);
 
-// Protege o acesso garantindo que apenas alunos logados entrem na pagina
-require_once __DIR__ . '/../app/middleware/verificar_aluno.php';
-// Conexao central com o banco de dados
+// Verifica se o usuario e administrador
+require_once __DIR__ . '/../app/middleware/verificar_admin.php';
+// Conexao com o banco
 require_once __DIR__ . '/../app/database/database.php';
-// Model responsavel por buscar e organizar as notas do aluno
+// Model para buscar notas e faltas consolidadas
 require_once __DIR__ . '/../app/models/NotasModel.php';
-// Model responsavel por gerenciar os periodos letivos (Bimestres/Trimestres)
+// Model para listar periodos (Bimestres/Trimestres)
 require_once __DIR__ . '/../app/models/PeriodoLetivoModel.php';
+// Model para dados do usuario
+require_once __DIR__ . '/../app/models/UsuarioModel.php';
 
-// Pega o ID do aluno logado na sessao
-$alunoId = (int)$_SESSION['usuario']['id'];
-// Pega o ID da escola vinculada ao aluno
+// Pega o ID do aluno via URL
+$alunoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+// Pega o ID da escola do administrador
 $escolaId = (int)$_SESSION['usuario']['escola_id'];
-// Define o ano letivo padrao como 1
-$stmtAno = $pdo->prepare("
-    SELECT ano_letivo_id
-    FROM matriculas
-    WHERE aluno_id = :aid
-    AND status = 'ativa'
-    LIMIT 1
-");
+// Define o ano letivo padrao
+$anoLetivoId = 1;
 
-$stmtAno->execute([
-    ':aid' => $alunoId
-]);
-
-$anoLetivoId = (int) ($stmtAno->fetchColumn() ?: 1);
-
-// Instancia os modelos de dados necessarios
+// Instancia os modelos
 $notasModel = new NotaModel($pdo);
 $periodoModel = new PeriodoLetivoModel($pdo);
+$usuarioModel = new UsuarioModel($pdo);
 
-// Busca os periodos configurados para a escola no banco
+// Busca dados do aluno
+$aluno = $usuarioModel->buscarPorId($alunoId);
+// Se o aluno nao existir ou for de outra escola, redireciona
+if (!$aluno || (int)$aluno['escola_id'] !== $escolaId) {
+    header('Location: alunos.php');
+    exit;
+}
+
+// Busca os periodos da escola no banco
 $periodosBanco = $periodoModel->listarPorAno($anoLetivoId, $escolaId);
 
-// Lógica de períodos fixos conforme pedido
+// Lógica de períodos conforme o tipo de escola
 $periodosParaExibir = [];
 if (count($periodosBanco) > 0) {
     $periodosParaExibir = $periodosBanco;
@@ -63,20 +62,26 @@ $stmtMatricula = $pdo->prepare("SELECT t.nome as turma_nome, t.serie FROM matric
 $stmtMatricula->execute([':aid' => $alunoId]);
 $infoMatricula = $stmtMatricula->fetch(PDO::FETCH_ASSOC);
 
-$title = 'Boletim Escolar';
+$title = 'Visualizar Aluno - ' . $aluno['nome_completo'];
 require_once __DIR__ . '/../partials/header.php';
 ?>
 
 <div class="d-flex">
-    <?php require_once __DIR__ . '/../partials/aluno_menu.php'; ?>
+    <?php require_once __DIR__ . '/../partials/admin_sidebar.php'; ?>
 
-    <main class="main-content flex-grow-1" style="background-color: #f8f9fa; min-height: 100vh;">
+    <div class="main-content flex-grow-1">
         <?php require_once __DIR__ . '/../partials/top_panel.php'; ?>
 
         <div class="p-4">
+            <div class="mb-4">
+                <a href="alunos.php" class="btn btn-link text-decoration-none p-0 text-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar para lista de alunos
+                </a>
+            </div>
+
             <div class="bg-white shadow-sm rounded p-4 mx-auto" style="max-width: 1200px;">
                 
-                <!-- Cabecalho Informativo Conforme Imagem -->
+                <!-- Cabecalho Informativo -->
                 <div class="small mb-4 text-dark border-bottom pb-2">
                     <strong>Escola:</strong> <?= e($escolaNomeReal) ?> | 
                     <strong>Turma:</strong> <?= e($infoMatricula['turma_nome'] ?? '-') ?> | 
@@ -84,11 +89,13 @@ require_once __DIR__ . '/../partials/header.php';
                     <strong>Ano Escolar:</strong> <?= date('Y') ?>
                 </div>
 
-                <!-- Tabela de Notas Padronizada (SIMPLES - SÓ A TABELA) -->
-                <div class="table-responsive">
+                <h5 class="fw-bold text-secondary mb-4">Boletim do Aluno: <?= e($aluno['nome_completo']) ?></h5>
+
+                <!-- Tabela de Notas Padronizada -->
+                <div class="table-responsive mb-4">
                     <table class="table table-bordered table-sm align-middle text-center small">
                         <thead class="table-light">
-                            <tr style="font-size: 0.65rem; background: #fdfdfd;">
+                            <tr style="font-size: 0.65rem;">
                                 <th rowspan="2" class="text-start py-3" style="width: 250px;">Áreas de Conhecimento Disciplinas</th>
                                 <?php foreach ($periodosParaExibir as $p): ?>
                                     <th colspan="3" class="text-uppercase"><?= e($p['nome']) ?></th>
@@ -135,7 +142,6 @@ require_once __DIR__ . '/../partials/header.php';
                                 </tr>
                             <?php endforeach; ?>
                             
-                            <!-- Linha de Total de Faltas -->
                             <tr class="fw-bold" style="background: #fafafa;">
                                 <td class="text-start">TOTAL DE FALTAS</td>
                                 <?php foreach ($periodosParaExibir as $p): ?>
@@ -153,12 +159,11 @@ require_once __DIR__ . '/../partials/header.php';
 
             </div>
         </div>
-    </main>
+    </div>
 </div>
 
 <style>
     .table-bordered td, .table-bordered th { border: 1px solid #e0e0e0 !important; }
-    .table thead th { vertical-align: middle; font-weight: 600; color: #555; }
 </style>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

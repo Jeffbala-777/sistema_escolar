@@ -1,0 +1,1 @@
+22//aqui que o filho chora e a mãe não verw
