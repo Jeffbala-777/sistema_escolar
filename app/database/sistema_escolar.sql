@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: May 28, 2026 at 05:26 PM
+-- Generation Time: Jun 02, 2026 at 05:39 PM
 -- Server version: 10.4.34-MariaDB
 -- PHP Version: 8.2.29
 
@@ -57,8 +57,7 @@ CREATE TABLE `anos_letivos` (
 --
 
 INSERT INTO `anos_letivos` (`id`, `escola_id`, `ano`, `ativo`, `inicio`, `fim`, `criado_em`) VALUES
-(10, 10, '2026', 1, NULL, NULL, '2026-05-28 14:07:14'),
-(20, 20, '2026', 1, NULL, NULL, '2026-05-28 14:07:14');
+(1, 1, '2026', 1, NULL, NULL, '2026-05-29 16:55:55');
 
 -- --------------------------------------------------------
 
@@ -75,6 +74,18 @@ CREATE TABLE `aulas` (
   `observacao` text DEFAULT NULL,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `aulas`
+--
+
+INSERT INTO `aulas` (`id`, `escola_id`, `professor_turma_disciplina_id`, `data_aula`, `conteudo`, `observacao`, `criado_em`) VALUES
+(1, 1, 12, '2026-05-30', NULL, NULL, '2026-05-30 17:24:51'),
+(2, 1, 12, '2026-05-31', NULL, NULL, '2026-05-31 11:51:59'),
+(3, 1, 12, '2026-06-01', NULL, NULL, '2026-06-01 11:42:01'),
+(4, 1, 12, '2026-06-02', NULL, NULL, '2026-06-02 08:42:19'),
+(5, 1, 12, '2026-06-03', NULL, NULL, '2026-06-02 08:42:26'),
+(6, 1, 12, '2026-06-04', NULL, NULL, '2026-06-02 08:42:34');
 
 -- --------------------------------------------------------
 
@@ -128,16 +139,11 @@ CREATE TABLE `disciplinas` (
 --
 
 INSERT INTO `disciplinas` (`id`, `escola_id`, `nome`, `codigo`, `carga_horaria`, `ativo`, `criado_em`) VALUES
-(101, 10, 'Matemática', 'MAT', 0, 1, '2026-05-28 14:07:14'),
-(102, 10, 'Português', 'POR', 0, 1, '2026-05-28 14:07:14'),
-(103, 10, 'História', 'HIS', 0, 1, '2026-05-28 14:07:14'),
-(104, 10, 'Geografia', 'GEO', 0, 1, '2026-05-28 14:07:14'),
-(105, 10, 'Ciências', 'CIE', 0, 1, '2026-05-28 14:07:14'),
-(201, 20, 'Matemática', 'MAT', 0, 1, '2026-05-28 14:07:14'),
-(202, 20, 'Português', 'POR', 0, 1, '2026-05-28 14:07:14'),
-(203, 20, 'Física', 'FIS', 0, 1, '2026-05-28 14:07:14'),
-(204, 20, 'Química', 'QUI', 0, 1, '2026-05-28 14:07:14'),
-(205, 20, 'Biologia', 'BIO', 0, 1, '2026-05-28 14:07:14');
+(11, 1, 'Portugues', NULL, 0, 1, '2026-05-29 16:55:55'),
+(12, 1, 'Matematica', NULL, 0, 1, '2026-05-29 16:55:55'),
+(13, 1, 'Historia', NULL, 0, 1, '2026-05-29 16:55:55'),
+(14, 1, 'Geografia', NULL, 0, 1, '2026-05-29 16:55:56'),
+(15, 1, 'Ciencias', NULL, 0, 1, '2026-05-29 16:55:56');
 
 -- --------------------------------------------------------
 
@@ -186,8 +192,7 @@ CREATE TABLE `escolas` (
 --
 
 INSERT INTO `escolas` (`id`, `nome`, `codigo`, `cnpj`, `cidade`, `estado`, `logo`, `tipo_periodo`, `escala_nota`, `plano`, `expiracao`, `ativo`, `criado_em`) VALUES
-(10, 'Colégio Santa Maria', 'CSM01', '10.200.300/0001-10', 'Vitória', 'ES', NULL, 'bimestral', '10', 'basico', NULL, 1, '2026-05-28 14:07:14'),
-(20, 'Instituto Dom Bosco', 'IDB02', '20.300.400/0001-20', 'Belo Horizonte', 'MG', NULL, 'trimestral', '100', 'basico', NULL, 1, '2026-05-28 14:07:14');
+(1, 'SENAI Belo Horizonte', 'SENAI02', NULL, NULL, NULL, NULL, 'trimestral', '100', 'basico', NULL, 1, '2026-05-29 16:55:55');
 
 -- --------------------------------------------------------
 
@@ -231,36 +236,26 @@ CREATE TABLE `matriculas` (
 --
 
 INSERT INTO `matriculas` (`id`, `escola_id`, `aluno_id`, `turma_id`, `ano_letivo_id`, `numero_matricula`, `data_matricula`, `status`, `observacao`, `criado_em`) VALUES
-(1, 10, 1201, 101, 10, 'MAT1001', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(2, 10, 1202, 101, 10, 'MAT1002', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(3, 10, 1203, 101, 10, 'MAT1003', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(4, 10, 1204, 101, 10, 'MAT1004', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(5, 10, 1205, 101, 10, 'MAT1005', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(6, 10, 1206, 101, 10, 'MAT1006', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(7, 10, 1207, 101, 10, 'MAT1007', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(8, 10, 1208, 101, 10, 'MAT1008', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(9, 10, 1209, 101, 10, 'MAT1009', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(10, 10, 1210, 101, 10, 'MAT1010', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(11, 10, 1211, 101, 10, 'MAT1011', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(12, 10, 1212, 101, 10, 'MAT1012', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(13, 10, 1213, 101, 10, 'MAT1013', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(14, 10, 1214, 101, 10, 'MAT1014', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(15, 10, 1215, 101, 10, 'MAT1015', '2026-01-10', 'ativa', NULL, '2026-05-28 14:07:14'),
-(16, 20, 2201, 201, 20, 'IDB2001', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(17, 20, 2202, 201, 20, 'IDB2002', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(18, 20, 2203, 201, 20, 'IDB2003', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(19, 20, 2204, 201, 20, 'IDB2004', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(20, 20, 2205, 201, 20, 'IDB2005', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(21, 20, 2206, 201, 20, 'IDB2006', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(22, 20, 2207, 201, 20, 'IDB2007', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(23, 20, 2208, 201, 20, 'IDB2008', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(24, 20, 2209, 201, 20, 'IDB2009', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(25, 20, 2210, 201, 20, 'IDB2010', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(26, 20, 2211, 201, 20, 'IDB2011', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(27, 20, 2212, 201, 20, 'IDB2012', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(28, 20, 2213, 201, 20, 'IDB2013', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(29, 20, 2214, 201, 20, 'IDB2014', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15'),
-(30, 20, 2215, 201, 20, 'IDB2015', '2026-01-12', 'ativa', NULL, '2026-05-28 14:07:15');
+(25, 1, 8, 3, 1, 'MAT200', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(26, 1, 9, 3, 1, 'MAT201', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(27, 1, 10, 3, 1, 'MAT202', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(28, 1, 11, 3, 1, 'MAT203', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(29, 1, 12, 3, 1, 'MAT204', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(30, 1, 13, 3, 1, 'MAT205', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(31, 1, 14, 3, 1, 'MAT206', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(32, 1, 15, 3, 1, 'MAT207', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(33, 1, 16, 3, 1, 'MAT208', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(34, 1, 17, 3, 1, 'MAT209', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(35, 1, 18, 3, 1, 'MAT210', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(36, 1, 19, 3, 1, 'MAT211', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(37, 1, 20, 3, 1, 'MAT212', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(38, 1, 21, 3, 1, 'MAT213', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(39, 1, 22, 3, 1, 'MAT214', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(40, 1, 23, 3, 1, 'MAT215', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(41, 1, 24, 3, 1, 'MAT216', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(42, 1, 25, 3, 1, 'MAT217', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(43, 1, 26, 3, 1, 'MAT218', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56'),
+(44, 1, 27, 3, 1, 'MAT219', '2026-01-10', 'ativa', NULL, '2026-05-29 16:55:56');
 
 -- --------------------------------------------------------
 
@@ -288,7 +283,26 @@ CREATE TABLE `notas` (
 --
 
 INSERT INTO `notas` (`id`, `escola_id`, `aluno_id`, `disciplina_id`, `professor_id`, `ano_letivo_id`, `periodo_id`, `tipo`, `nota`, `observacao`, `data_lancamento`, `data_ultima_edicao`) VALUES
-(1, 10, 1201, 101, 1101, 10, 1, 'prova', 2.40, NULL, '2026-05-28 12:25:03', '2026-05-28 15:25:03');
+(1, 1, 8, 12, 4, 1, 8, 'prova', 30.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:46'),
+(2, 1, 23, 12, 4, 1, 8, 'prova', 21.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:46'),
+(3, 1, 11, 12, 4, 1, 8, 'prova', 19.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:46'),
+(4, 1, 27, 12, 4, 1, 8, 'prova', 16.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:46'),
+(5, 1, 16, 12, 4, 1, 8, 'prova', 18.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:46'),
+(6, 1, 24, 12, 4, 1, 8, 'prova', 7.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:47'),
+(7, 1, 25, 12, 4, 1, 8, 'prova', 9.00, NULL, '2026-05-31 08:53:32', '2026-06-02 08:45:47'),
+(8, 1, 10, 12, 4, 1, 8, 'prova', 3.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(9, 1, 18, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(10, 1, 15, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(11, 1, 14, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(12, 1, 22, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(13, 1, 20, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(14, 1, 12, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(15, 1, 13, 12, 4, 1, 8, 'prova', 3.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(16, 1, 21, 12, 4, 1, 8, 'prova', 4.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(17, 1, 26, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(18, 1, 9, 12, 4, 1, 8, 'prova', 1.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(19, 1, 19, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47'),
+(20, 1, 17, 12, 4, 1, 8, 'prova', 2.00, NULL, '2026-06-02 05:45:47', '2026-06-02 08:45:47');
 
 -- --------------------------------------------------------
 
@@ -308,10 +322,10 @@ CREATE TABLE `perfis` (
 --
 
 INSERT INTO `perfis` (`id`, `nome`, `nivel`, `criado_em`) VALUES
-(1, 'admin_supremo', 100, '2026-05-28 13:42:48'),
-(2, 'admin', 80, '2026-05-28 13:42:48'),
-(3, 'professor', 50, '2026-05-28 13:42:48'),
-(4, 'aluno', 10, '2026-05-28 13:42:48');
+(1, 'admin_supremo', 100, '2026-05-29 16:54:24'),
+(2, 'admin', 80, '2026-05-29 16:54:24'),
+(3, 'professor', 50, '2026-05-29 16:54:24'),
+(4, 'aluno', 10, '2026-05-29 16:54:24');
 
 -- --------------------------------------------------------
 
@@ -336,13 +350,9 @@ CREATE TABLE `periodos_letivos` (
 --
 
 INSERT INTO `periodos_letivos` (`id`, `escola_id`, `ano_letivo_id`, `nome`, `data_inicio`, `data_fim`, `ordem`, `ativo`, `criado_em`) VALUES
-(1, 10, 10, '1º Bimestre', NULL, NULL, 1, 1, '2026-05-28 14:07:14'),
-(2, 10, 10, '2º Bimestre', NULL, NULL, 2, 1, '2026-05-28 14:07:14'),
-(3, 10, 10, '3º Bimestre', NULL, NULL, 3, 1, '2026-05-28 14:07:14'),
-(4, 10, 10, '4º Bimestre', NULL, NULL, 4, 1, '2026-05-28 14:07:14'),
-(5, 20, 20, '1º Trimestre', NULL, NULL, 1, 1, '2026-05-28 14:07:14'),
-(6, 20, 20, '2º Trimestre', NULL, NULL, 2, 1, '2026-05-28 14:07:14'),
-(7, 20, 20, '3º Trimestre', NULL, NULL, 3, 1, '2026-05-28 14:07:14');
+(8, 1, 1, '1º Trimestre', NULL, NULL, 1, 1, '2026-05-29 16:55:55'),
+(9, 1, 1, '2º Trimestre', NULL, NULL, 2, 1, '2026-05-29 16:55:55'),
+(10, 1, 1, '3º Trimestre', NULL, NULL, 3, 1, '2026-05-29 16:55:55');
 
 -- --------------------------------------------------------
 
@@ -359,6 +369,72 @@ CREATE TABLE `presencas` (
   `observacao` varchar(255) DEFAULT NULL,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `presencas`
+--
+
+INSERT INTO `presencas` (`id`, `escola_id`, `aula_id`, `aluno_id`, `status`, `observacao`, `criado_em`) VALUES
+(1, 1, 4, 8, 'falta', NULL, '2026-06-02 08:42:23'),
+(2, 1, 4, 23, 'presente', NULL, '2026-06-02 08:42:23'),
+(3, 1, 4, 11, 'presente', NULL, '2026-06-02 08:42:23'),
+(4, 1, 4, 27, 'presente', NULL, '2026-06-02 08:42:23'),
+(5, 1, 4, 16, 'presente', NULL, '2026-06-02 08:42:23'),
+(6, 1, 4, 10, 'presente', NULL, '2026-06-02 08:42:23'),
+(7, 1, 4, 18, 'presente', NULL, '2026-06-02 08:42:23'),
+(8, 1, 4, 15, 'presente', NULL, '2026-06-02 08:42:23'),
+(9, 1, 4, 14, 'presente', NULL, '2026-06-02 08:42:23'),
+(10, 1, 4, 22, 'presente', NULL, '2026-06-02 08:42:23'),
+(11, 1, 4, 20, 'presente', NULL, '2026-06-02 08:42:23'),
+(12, 1, 4, 12, 'presente', NULL, '2026-06-02 08:42:23'),
+(13, 1, 4, 13, 'presente', NULL, '2026-06-02 08:42:23'),
+(14, 1, 4, 24, 'presente', NULL, '2026-06-02 08:42:23'),
+(15, 1, 4, 21, 'presente', NULL, '2026-06-02 08:42:23'),
+(16, 1, 4, 26, 'presente', NULL, '2026-06-02 08:42:23'),
+(17, 1, 4, 9, 'presente', NULL, '2026-06-02 08:42:23'),
+(18, 1, 4, 19, 'presente', NULL, '2026-06-02 08:42:23'),
+(19, 1, 4, 25, 'presente', NULL, '2026-06-02 08:42:23'),
+(20, 1, 4, 17, 'presente', NULL, '2026-06-02 08:42:23'),
+(21, 1, 5, 8, 'falta', NULL, '2026-06-02 08:42:29'),
+(22, 1, 5, 23, 'presente', NULL, '2026-06-02 08:42:29'),
+(23, 1, 5, 11, 'presente', NULL, '2026-06-02 08:42:29'),
+(24, 1, 5, 27, 'presente', NULL, '2026-06-02 08:42:29'),
+(25, 1, 5, 16, 'presente', NULL, '2026-06-02 08:42:29'),
+(26, 1, 5, 10, 'presente', NULL, '2026-06-02 08:42:29'),
+(27, 1, 5, 18, 'presente', NULL, '2026-06-02 08:42:29'),
+(28, 1, 5, 15, 'presente', NULL, '2026-06-02 08:42:29'),
+(29, 1, 5, 14, 'presente', NULL, '2026-06-02 08:42:29'),
+(30, 1, 5, 22, 'presente', NULL, '2026-06-02 08:42:29'),
+(31, 1, 5, 20, 'presente', NULL, '2026-06-02 08:42:29'),
+(32, 1, 5, 12, 'presente', NULL, '2026-06-02 08:42:29'),
+(33, 1, 5, 13, 'presente', NULL, '2026-06-02 08:42:29'),
+(34, 1, 5, 24, 'presente', NULL, '2026-06-02 08:42:29'),
+(35, 1, 5, 21, 'presente', NULL, '2026-06-02 08:42:29'),
+(36, 1, 5, 26, 'presente', NULL, '2026-06-02 08:42:29'),
+(37, 1, 5, 9, 'presente', NULL, '2026-06-02 08:42:29'),
+(38, 1, 5, 19, 'presente', NULL, '2026-06-02 08:42:29'),
+(39, 1, 5, 25, 'presente', NULL, '2026-06-02 08:42:29'),
+(40, 1, 5, 17, 'presente', NULL, '2026-06-02 08:42:29'),
+(41, 1, 6, 8, 'falta', NULL, '2026-06-02 08:42:36'),
+(42, 1, 6, 23, 'presente', NULL, '2026-06-02 08:42:36'),
+(43, 1, 6, 11, 'presente', NULL, '2026-06-02 08:42:36'),
+(44, 1, 6, 27, 'presente', NULL, '2026-06-02 08:42:36'),
+(45, 1, 6, 16, 'presente', NULL, '2026-06-02 08:42:36'),
+(46, 1, 6, 10, 'presente', NULL, '2026-06-02 08:42:36'),
+(47, 1, 6, 18, 'presente', NULL, '2026-06-02 08:42:36'),
+(48, 1, 6, 15, 'presente', NULL, '2026-06-02 08:42:36'),
+(49, 1, 6, 14, 'presente', NULL, '2026-06-02 08:42:36'),
+(50, 1, 6, 22, 'presente', NULL, '2026-06-02 08:42:36'),
+(51, 1, 6, 20, 'presente', NULL, '2026-06-02 08:42:36'),
+(52, 1, 6, 12, 'presente', NULL, '2026-06-02 08:42:36'),
+(53, 1, 6, 13, 'presente', NULL, '2026-06-02 08:42:36'),
+(54, 1, 6, 24, 'presente', NULL, '2026-06-02 08:42:36'),
+(55, 1, 6, 21, 'presente', NULL, '2026-06-02 08:42:36'),
+(56, 1, 6, 26, 'presente', NULL, '2026-06-02 08:42:36'),
+(57, 1, 6, 9, 'presente', NULL, '2026-06-02 08:42:36'),
+(58, 1, 6, 19, 'presente', NULL, '2026-06-02 08:42:36'),
+(59, 1, 6, 25, 'presente', NULL, '2026-06-02 08:42:36'),
+(60, 1, 6, 17, 'presente', NULL, '2026-06-02 08:42:36');
 
 -- --------------------------------------------------------
 
@@ -383,16 +459,34 @@ CREATE TABLE `professor_turma_disciplina` (
 --
 
 INSERT INTO `professor_turma_disciplina` (`id`, `escola_id`, `professor_id`, `turma_id`, `disciplina_id`, `ano_letivo_id`, `periodo_id`, `ativo`, `criado_em`) VALUES
-(1, 10, 1101, 101, 101, 10, NULL, 1, '2026-05-28 14:07:14'),
-(2, 10, 1101, 101, 105, 10, NULL, 1, '2026-05-28 14:07:14'),
-(3, 10, 1102, 101, 102, 10, NULL, 1, '2026-05-28 14:07:14'),
-(4, 10, 1102, 101, 103, 10, NULL, 1, '2026-05-28 14:07:14'),
-(5, 10, 1102, 101, 104, 10, NULL, 1, '2026-05-28 14:07:14'),
-(6, 20, 2101, 201, 201, 20, NULL, 1, '2026-05-28 14:07:14'),
-(7, 20, 2101, 201, 203, 20, NULL, 1, '2026-05-28 14:07:14'),
-(8, 20, 2101, 201, 204, 20, NULL, 1, '2026-05-28 14:07:14'),
-(9, 20, 2102, 201, 202, 20, NULL, 1, '2026-05-28 14:07:14'),
-(10, 20, 2102, 201, 205, 20, NULL, 1, '2026-05-28 14:07:14');
+(11, 1, 3, 3, 11, 1, NULL, 1, '2026-05-29 16:55:55'),
+(12, 1, 4, 3, 12, 1, NULL, 1, '2026-05-29 16:55:55'),
+(13, 1, 5, 3, 13, 1, NULL, 1, '2026-05-29 16:55:56'),
+(14, 1, 6, 3, 14, 1, NULL, 1, '2026-05-29 16:55:56'),
+(15, 1, 7, 3, 15, 1, NULL, 1, '2026-05-29 16:55:56');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `relatorios_alunos`
+--
+
+CREATE TABLE `relatorios_alunos` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `escola_id` int(10) UNSIGNED NOT NULL,
+  `aluno_id` int(10) UNSIGNED NOT NULL,
+  `professor_id` int(10) UNSIGNED NOT NULL,
+  `turma_id` int(10) UNSIGNED NOT NULL,
+  `conteudo` text NOT NULL,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `relatorios_alunos`
+--
+
+INSERT INTO `relatorios_alunos` (`id`, `escola_id`, `aluno_id`, `professor_id`, `turma_id`, `conteudo`, `criado_em`) VALUES
+(2, 1, 8, 4, 3, 'Ele é bem melhor que o resto que a turma inteira! Ele tem ego + aura. Ele mogga os adversários como ninguém 💀', '2026-06-01 18:36:35');
 
 -- --------------------------------------------------------
 
@@ -434,8 +528,7 @@ CREATE TABLE `turmas` (
 --
 
 INSERT INTO `turmas` (`id`, `escola_id`, `ano_letivo_id`, `nome`, `serie`, `turno`, `capacidade`, `ativo`, `criado_em`) VALUES
-(101, 10, 10, '9º Ano A', '9ª Série', 'manhã', 40, 1, '2026-05-28 14:07:14'),
-(201, 20, 20, '3º Ano Médio', '3ª Série', 'tarde', 40, 1, '2026-05-28 14:07:14');
+(3, 1, 1, 'DDS03', '1º Ano', 'tarde', 40, 1, '2026-05-29 16:55:55');
 
 -- --------------------------------------------------------
 
@@ -463,43 +556,33 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id`, `escola_id`, `perfil_id`, `nome_completo`, `email`, `senha`, `cpf`, `telefone`, `nascimento`, `foto`, `ativo`, `criado_em`) VALUES
-(1, NULL, 1, 'Administrador Supremo', 'supremo@sistema.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, NULL, NULL, 1, '2026-05-28 13:42:48'),
-(1001, 10, 2, 'Ricardo Oliveira', 'admin.santamaria@admin.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1101, 10, 3, 'Carlos Eduardo Santos', 'carlos.prof@prof.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1102, 10, 3, 'Fernanda Souza', 'fernanda.prof@prof.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1201, 10, 4, 'Alice Ferreira Lima', 'alice.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1202, 10, 4, 'Bruno Henrique Costa', 'bruno.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1203, 10, 4, 'Camila Rocha', 'camila.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1204, 10, 4, 'Daniel Alves', 'daniel.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1205, 10, 4, 'Eduarda Mendes', 'eduarda.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1206, 10, 4, 'Felipe Augusto', 'felipe.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1207, 10, 4, 'Gabriela Neves', 'gabriela.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1208, 10, 4, 'Heitor Braga', 'heitor.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1209, 10, 4, 'Isadora Martins', 'isadora.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1210, 10, 4, 'João Pedro Silva', 'joao.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1211, 10, 4, 'Kaiky Oliveira', 'kaiky.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1212, 10, 4, 'Larissa Vieira', 'larissa.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1213, 10, 4, 'Murilo Gomes', 'murilo.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1214, 10, 4, 'Nicole Castro', 'nicole.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(1215, 10, 4, 'Otávio Rezende', 'otavio.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2001, 20, 2, 'Patrícia Lima', 'admin.dombosco@admin.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2101, 20, 3, 'Roberto Carlos', 'roberto.prof@prof.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2102, 20, 3, 'Mariana Peixoto', 'mariana.prof@prof.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2201, 20, 4, 'André Luiz Silva', 'andre.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2202, 20, 4, 'Beatriz Xavier', 'beatriz.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2203, 20, 4, 'Caio Moreira', 'caio.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2204, 20, 4, 'Débora Freitas', 'debora.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2205, 20, 4, 'Elias Júnio', 'elias.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2206, 20, 4, 'Flávia Alessandra', 'flavia.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2207, 20, 4, 'Gustavo Henrique', 'gustavo.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2208, 20, 4, 'Heloísa Helena', 'heloisa.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2209, 20, 4, 'Igor Guimarães', 'igor.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2210, 20, 4, 'Júlia Roberta', 'julia.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2211, 20, 4, 'Kevin Willian', 'kevin.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2212, 20, 4, 'Luana Piovani', 'luana.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2213, 20, 4, 'Matheus Solano', 'matheus.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2214, 20, 4, 'Nayara Azevedo', 'nayara.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14'),
-(2215, 20, 4, 'Paulo Gustavo', 'paulo.aluno@aluno.edu.com', '$2y$10$RyHUoJhPqKjFGqsB5OzmVeizKYGYuRTd4JWP9cHn7IHDkPZ1ZewaW', NULL, NULL, NULL, NULL, 1, '2026-05-28 14:07:14');
+(1, NULL, 1, 'Admin Supremo', 'supremo@adm.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:54:24'),
+(2, 1, 2, 'Amanda Costa', 'amanda.costa@admin.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:55'),
+(3, 1, 3, 'Pedro Lima', 'pedro.lima78@prof.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:55'),
+(4, 1, 3, 'Samuel Lopes', 'samuel.lopes78@prof.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:55'),
+(5, 1, 3, 'Lorena Martins', 'lorena.martins65@prof.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(6, 1, 3, 'Beatriz Fernandes', 'beatriz.fernandes57@prof.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(7, 1, 3, 'Giovanna Lopes', 'giovanna.lopes37@prof.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(8, 1, 4, 'Arthur Gomes', 'arthur.gomes867@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(9, 1, 4, 'Rafael Alves', 'rafael.alves537@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(10, 1, 4, 'Enzo Rodrigues', 'enzo.rodrigues368@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(11, 1, 4, 'Daniel Lima', 'daniel.lima402@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(12, 1, 4, 'Julia Costa', 'julia.costa498@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(13, 1, 4, 'Lorena Pereira', 'lorena.pereira899@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(14, 1, 4, 'Gustavo Ferreira', 'gustavo.ferreira332@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(15, 1, 4, 'Guilherme Ferreira', 'guilherme.ferreira201@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(16, 1, 4, 'Enzo Martins', 'enzo.martins957@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(17, 1, 4, 'Vitor Souza', 'vitor.souza777@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(18, 1, 4, 'Giovanna Fernandes', 'giovanna.fernandes292@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(19, 1, 4, 'Samuel Silva', 'samuel.silva998@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(20, 1, 4, 'Joao Lopes', 'joao.lopes387@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(21, 1, 4, 'Manuela Santos', 'manuela.santos673@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(22, 1, 4, 'Joao Gomes', 'joao.gomes374@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(23, 1, 4, 'Bruno Alves', 'bruno.alves433@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(24, 1, 4, 'Luiza Costa', 'luiza.costa629@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(25, 1, 4, 'Samuel Vieira', 'samuel.vieira776@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(26, 1, 4, 'Pedro Soares', 'pedro.soares745@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56'),
+(27, 1, 4, 'Daniel Rodrigues', 'daniel.rodrigues290@aluno.edu.com', '$2y$10$B4kI6ogrWg.R/M7ZHu2LWuN1eFn9n7iCqr8UTqri13rlEH4n7tkHm', NULL, NULL, NULL, NULL, 1, '2026-05-29 16:55:56');
 
 --
 -- Indexes for dumped tables
@@ -631,6 +714,16 @@ ALTER TABLE `professor_turma_disciplina`
   ADD KEY `fk_ptd_ano` (`ano_letivo_id`);
 
 --
+-- Indexes for table `relatorios_alunos`
+--
+ALTER TABLE `relatorios_alunos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_rel_escola` (`escola_id`),
+  ADD KEY `fk_rel_aluno` (`aluno_id`),
+  ADD KEY `fk_rel_prof` (`professor_id`),
+  ADD KEY `fk_rel_turma` (`turma_id`);
+
+--
 -- Indexes for table `responsaveis`
 --
 ALTER TABLE `responsaveis`
@@ -668,13 +761,13 @@ ALTER TABLE `aluno_responsavel`
 -- AUTO_INCREMENT for table `anos_letivos`
 --
 ALTER TABLE `anos_letivos`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `aulas`
 --
 ALTER TABLE `aulas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `boletins`
@@ -692,7 +785,7 @@ ALTER TABLE `configuracoes`
 -- AUTO_INCREMENT for table `disciplinas`
 --
 ALTER TABLE `disciplinas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=206;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `enderecos`
@@ -704,7 +797,7 @@ ALTER TABLE `enderecos`
 -- AUTO_INCREMENT for table `escolas`
 --
 ALTER TABLE `escolas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `logs_auditoria`
@@ -716,13 +809,13 @@ ALTER TABLE `logs_auditoria`
 -- AUTO_INCREMENT for table `matriculas`
 --
 ALTER TABLE `matriculas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `notas`
 --
 ALTER TABLE `notas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `perfis`
@@ -734,19 +827,25 @@ ALTER TABLE `perfis`
 -- AUTO_INCREMENT for table `periodos_letivos`
 --
 ALTER TABLE `periodos_letivos`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `presencas`
 --
 ALTER TABLE `presencas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `professor_turma_disciplina`
 --
 ALTER TABLE `professor_turma_disciplina`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT for table `relatorios_alunos`
+--
+ALTER TABLE `relatorios_alunos`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `responsaveis`
@@ -758,13 +857,13 @@ ALTER TABLE `responsaveis`
 -- AUTO_INCREMENT for table `turmas`
 --
 ALTER TABLE `turmas`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=202;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2216;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- Constraints for dumped tables
@@ -869,6 +968,15 @@ ALTER TABLE `professor_turma_disciplina`
   ADD CONSTRAINT `fk_ptd_escola` FOREIGN KEY (`escola_id`) REFERENCES `escolas` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_ptd_prof` FOREIGN KEY (`professor_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_ptd_turma` FOREIGN KEY (`turma_id`) REFERENCES `turmas` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `relatorios_alunos`
+--
+ALTER TABLE `relatorios_alunos`
+  ADD CONSTRAINT `fk_rel_aluno` FOREIGN KEY (`aluno_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rel_escola` FOREIGN KEY (`escola_id`) REFERENCES `escolas` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rel_prof` FOREIGN KEY (`professor_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rel_turma` FOREIGN KEY (`turma_id`) REFERENCES `turmas` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `responsaveis`
