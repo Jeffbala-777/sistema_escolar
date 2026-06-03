@@ -20,8 +20,8 @@ if ($turmaId > 0) { // Se escolheu turma, busca professores vinculados a ela
     // Busca professores da turma via tabela de vinculos
     $stmt = $pdo->prepare("SELECT DISTINCT u.* FROM usuarios u 
                            INNER JOIN professor_turma_disciplina ptd ON ptd.professor_id = u.id 
-                           WHERE ptd.turma_id = :tid AND u.ativo = 1");
-    $stmt->execute([':tid' => $turmaId]);
+                           WHERE ptd.turma_id = :tid AND u.ativo = 1 AND u.escola_id = :escola_id");
+    $stmt->execute([':tid' => $turmaId, ':escola_id' => $_SESSION['usuario']['escola_id']]);
     $professores = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

@@ -12,6 +12,8 @@ require_once __DIR__ . '/../app/models/NotasModel.php';
 require_once __DIR__ . '/../app/models/PeriodoLetivoModel.php';
 // Model para faltas
 require_once __DIR__ . '/../app/models/FaltaModel.php';
+// Componente unificado de boletim
+require_once __DIR__ . '/../app/components/BoletimComponent.php';
 
 // Pega o ID do aluno logado na sessao
 $alunoId = (int)$_SESSION['usuario']['id'];
@@ -71,9 +73,11 @@ foreach ($estatisticasFrequencia as $est) {
 $percentualGlobal = $totalAulasAno > 0 ? round((($totalAulasAno - $totalFaltasAno) / $totalAulasAno) * 100, 1) : 100;
 
 // Busca informacoes da escola diretamente do banco
-$stmtEscola = $pdo->prepare("SELECT nome FROM escolas WHERE id = :id LIMIT 1");
+$stmtEscola = $pdo->prepare("SELECT nome, tipo_periodo FROM escolas WHERE id = :id LIMIT 1");
 $stmtEscola->execute([':id' => $escolaId]);
-$escolaNomeReal = $stmtEscola->fetchColumn() ?: 'Minha Escola';
+$escolaInfo = $stmtEscola->fetch(PDO::FETCH_ASSOC);
+$escolaNomeReal = $escolaInfo['nome'] ?? 'Minha Escola';
+$tipoPeriodo = $escolaInfo['tipo_periodo'] ?? 'bimestral';
 
 // Busca dados da matricula
 $stmtMatricula = $pdo->prepare("SELECT t.nome as turma_nome, t.serie FROM matriculas m 
@@ -81,6 +85,9 @@ $stmtMatricula = $pdo->prepare("SELECT t.nome as turma_nome, t.serie FROM matric
                                 WHERE m.aluno_id = :aid AND m.status = 'ativa' LIMIT 1");
 $stmtMatricula->execute([':aid' => $alunoId]);
 $infoMatricula = $stmtMatricula->fetch(PDO::FETCH_ASSOC);
+
+// Inicializa o componente de boletim
+$boletimComponent = new BoletimComponent($pdo, $escolaId, $tipoPeriodo);
 
 $title = 'Boletim Completo';
 require_once __DIR__ . '/../partials/header.php';
@@ -97,79 +104,23 @@ require_once __DIR__ . '/../partials/header.php';
         <div class="p-4">
             <div class="bg-white shadow-sm rounded p-4 mx-auto" style="max-width: 1200px;">
                 
-                <!-- Cabecalho Informativo Conforme Imagem -->
-                <div class="small mb-4 text-dark border-bottom pb-2">
-                    <strong>Escola:</strong> <?= e($escolaNomeReal) ?> | 
-                    <strong>Turma:</strong> <?= e($infoMatricula['turma_nome'] ?? '-') ?> | 
-                    <strong>Ano de Escolaridade:</strong> <?= e($infoMatricula['serie'] ?? '-') ?> | 
-                    <strong>Ano Escolar:</strong> <?= date('Y') ?>
+                <!-- Botão Voltar -->
+                <div class="mb-3">
+                    <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> Voltar tela
+                    </a>
                 </div>
 
-                <!-- Tabela de Notas Padronizada (COMPLETA) -->
-                <div class="table-responsive mb-4">
-                    <table class="table table-bordered table-sm align-middle text-center small">
-                        <thead class="table-light">
-                            <tr style="font-size: 0.65rem; background: #fdfdfd;">
-                                <th rowspan="2" class="text-start py-3" style="width: 250px;">Áreas de Conhecimento Disciplinas</th>
-                                <?php foreach ($periodosParaExibir as $p): ?>
-                                    <th colspan="3" class="text-uppercase"><?= e($p['nome']) ?></th>
-                                <?php endforeach; ?>
-                                <th rowspan="2" style="width: 60px;">AP FINAL</th>
-                                <th rowspan="2" style="width: 80px;">RECUPERAÇÃO FINAL</th>
-                                <th rowspan="2" style="width: 60px;">RES FINAL</th>
-                            </tr>
-                            <tr style="font-size: 0.6rem;">
-                                <?php foreach ($periodosParaExibir as $p): ?>
-                                    <th>NOTA</th>
-                                    <th>FALTA</th>
-                                    <th>F.J.</th>
-                                <?php endforeach; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $faltasPorPeriodo = [];
-                            foreach ($periodosParaExibir as $p) { $faltasPorPeriodo[$p['id']] = 0; }
-                            
-                            foreach ($boletim as $disciplina => $dados): 
-                                $somaNotas = 0;
-                                $contNotas = 0;
-                            ?>
-                                <tr>
-                                    <td class="text-start fw-bold text-uppercase" style="font-size: 0.7rem;"><?= e($disciplina) ?></td>
-                                    <?php foreach ($periodosParaExibir as $p): 
-                                        $pid = $p['id'];
-                                        $n = $dados[$pid]['nota'] ?? '--';
-                                        $f = $dados[$pid]['faltas'] ?? 0;
-                                        if ($n !== '--' && $n !== '-') { $somaNotas += (float)$n; $contNotas++; }
-                                        $faltasPorPeriodo[$pid] += (int)$f;
-                                    ?>
-                                        <td class="fw-bold"><?= $n ?></td>
-                                        <td class="<?= $f > 0 ? 'text-danger' : 'text-muted' ?>"><?= $f ?></td>
-                                        <td class="text-muted">0</td>
-                                    <?php endforeach; ?>
-                                    
-                                    <?php $media = $contNotas > 0 ? round($somaNotas / $contNotas, 1) : '--'; ?>
-                                    <td class="fw-bold bg-light"><?= $media ?></td>
-                                    <td class="text-muted">---</td>
-                                    <td class="fw-bold bg-light"><?= $media ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            
-                            <!-- Linha de Total de Faltas -->
-                            <tr class="fw-bold" style="background: #fafafa;">
-                                <td class="text-start">TOTAL DE FALTAS</td>
-                                <?php foreach ($periodosParaExibir as $p): ?>
-                                    <td>--</td>
-                                    <td class="text-danger"><?= $faltasPorPeriodo[$p['id']] ?></td>
-                                    <td>0</td>
-                                <?php endforeach; ?>
-                                <td>--</td>
-                                <td>--</td>
-                                <td>--</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- Cabeçalho Informativo -->
+                <?= $boletimComponent->renderizarCabecalhoInfo(
+                    $escolaNomeReal,
+                    $infoMatricula['turma_nome'] ?? '-',
+                    $infoMatricula['serie'] ?? '-'
+                ) ?>
+
+                <!-- Tabela de Notas Unificada -->
+                <div class="mb-4">
+                    <?= $boletimComponent->renderizarTabela($boletim, $periodosParaExibir) ?>
                 </div>
 
                 <div class="small mb-5">
@@ -284,9 +235,6 @@ new Chart(ctx, {
 });
 </script>
 
-<style>
-    .table-bordered td, .table-bordered th { border: 1px solid #e0e0e0 !important; }
-    .table thead th { vertical-align: middle; font-weight: 600; color: #555; }
-</style>
+<?= BoletimComponent::renderizarCSS() ?>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

@@ -114,4 +114,21 @@ class ProfessorTurmaDisciplinaModel
 
         return $stmt->fetchAll();
     }
+
+    public function buscarFaltasPorTurma(int $turmaId, int $escolaId)
+    {
+        $sql = "
+            SELECT 
+                COUNT(p.id) as total_faltas
+            FROM presencas p
+            INNER JOIN aulas a ON a.id = p.aula_id
+            INNER JOIN professor_turma_disciplina ptd ON ptd.id = a.professor_turma_disciplina_id
+            WHERE ptd.turma_id = ? 
+            AND p.escola_id = ?
+            AND p.status = 'falta'
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$turmaId, $escolaId]);
+        return (int) $stmt->fetchColumn();
+    }
 }

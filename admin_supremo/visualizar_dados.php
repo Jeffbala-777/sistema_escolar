@@ -38,7 +38,7 @@ if ($escola_id > 0) { // Se escolheu uma escola
         // Pega turmas e o ano letivo (JOIN evita erro de coluna faltando)
         $stmt = $pdo->prepare("SELECT t.*, al.ano as ano_letivo FROM turmas t JOIN anos_letivos al ON al.id = t.ano_letivo_id WHERE t.escola_id = :escola_id AND t.ativo = 1");
         $stmt->execute([':escola_id' => $escola_id]);
-        $turmas = $stmt->fetchAll();
+        $turmas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 

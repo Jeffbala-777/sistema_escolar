@@ -1,180 +1,147 @@
 <?php
-require_once __DIR__ . '/../app/middleware/admin.php';
+// Ativa tipagem estrita para segurança
+declare(strict_types=1);
+
+// Middleware de autenticação do admin
+require_once __DIR__ . '/../app/middleware/verificar_admin.php';
+// Conexão com o banco de dados
 require_once __DIR__ . '/../app/database/database.php';
+// Model de turmas
+require_once __DIR__ . '/../app/models/TurmaModel.php';
+// Model de relatórios
+require_once __DIR__ . '/../app/models/RelatorioAlunoModel.php';
 
-$title = 'Relatórios';
-$usuario = $_SESSION['usuario'] ?? null;
-$escola_id = $usuario['escola_id'] ?? 0;
+// Inicializa models
+$turmaModel = new TurmaModel($pdo);
+$relatorioModel = new RelatorioAlunoModel($pdo);
 
-if (!$escola_id) {
-    $erro = 'Escola não definida na sessão.';
-    require_once __DIR__ . '/../partials/header.php';
-    echo '<div class="container p-4"><div class="alert alert-danger">' . e($erro) . '</div></div>';
-    require_once __DIR__ . '/../partials/footer.php';
-    exit;
-}
+// ID da escola do admin logado
+$escolaId = (int)$_SESSION['usuario']['escola_id'];
+// Turma selecionada (via GET)
+$turmaId = isset($_GET['turma_id']) ? (int)$_GET['turma_id'] : 0;
+// Tipo de relatório (via GET: 'ia' ou 'professor')
+$tipoRelatorio = isset($_GET['tipo']) && in_array($_GET['tipo'], ['ia', 'professor']) ? $_GET['tipo'] : 'ia';
 
-// Filtros via GET
-$ano_letivo_id = (int)($_GET['ano_letivo_id'] ?? 0);
-$turma_id = (int)($_GET['turma_id'] ?? 0);
+// Busca todas as turmas da escola para o select
+$turmas = $turmaModel->listarPorEscola($escolaId);
 
-// Lista de anos letivos da escola (exemplo rápido)
-$anos_letivos = $pdo->query("SELECT id, ano FROM anos_letivos WHERE escola_id = $escola_id ORDER BY ano DESC")->fetchAll();
-if (empty($anos_letivos) && $ano_letivo_id === 0) {
-    $erro = 'Nenhum ano letivo cadastrado.';
-}
-
-// Lista de turmas da escola (filtradas por ano se desejado)
-$turmas = $pdo->query("SELECT id, nome, serie, turno FROM turmas WHERE escola_id = $escola_id AND ativo = 1 ORDER BY nome, serie")->fetchAll();
-
-// Carrega turma pelo id para mostrar no título
-$turma_nome = '';
-if ($turma_id > 0) {
-    $sql = "SELECT nome FROM turmas WHERE id = :turma_id AND escola_id = :escola_id";
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':turma_id', $turma_id, PDO::PARAM_INT);
-    $stmt->bindValue(':escola_id', $escola_id);
-    $stmt->execute();
-    $t = $stmt->fetch();
-    $turma_nome = $t ? $t['nome'] : '';
-}
-
-// Se não houver POST/GET de filtros, pega o primeiro ano
-if ($ano_letivo_id === 0 && !empty($anos_letivos)) {
-    $ano_letivo_id = (int)$anos_letivos[0]['id'];
-}
-
-$relatorio = [];
-
-// Só gera relatório se houver ano letivo válido
-if ($ano_letivo_id > 0) {
-    $sql_base = "SELECT m.turma_id, t.nome AS turma_nome, t.serie, t.turno
-                 FROM matriculas m
-                 JOIN turmas t ON t.id = m.turma_id
-                 WHERE m.escola_id = :escola_id
-                   AND m.ano_letivo_id = :ano_letivo_id
-                 GROUP BY m.turma_id";
-    $stmt = $pdo->prepare($sql_base);
-    $stmt->bindValue(':escola_id', $escola_id);
-    $stmt->bindValue(':ano_letivo_id', $ano_letivo_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $turmas_rel = $stmt->fetchAll();
-
-    foreach ($turmas_rel as $t) {
-        // Se tiver turma_id filtrada, pula as demais
-        if ($turma_id > 0 && $t['turma_id'] != $turma_id) {
-            continue;
+// Busca relatórios se uma turma for selecionada
+$relatorios = [];
+$turmaSelecionada = null;
+if ($turmaId > 0) {
+    $relatorios = $relatorioModel->listarPorTurma($turmaId, $escolaId, $tipoRelatorio);
+    // Busca dados da turma selecionada
+    foreach ($turmas as $t) {
+        if ((int)$t['id'] === $turmaId) {
+            $turmaSelecionada = $t;
+            break;
         }
-
-        // Média geral de notas da turma no ano
-        $sql_media = "SELECT AVG(n.nota) AS media_geral
-                      FROM notas n
-                      JOIN matriculas m ON m.aluno_id = n.aluno_id
-                      WHERE m.turma_id = :turma_id
-                        AND m.escola_id = :escola_id
-                        AND m.ano_letivo_id = :ano_letivo_id";
-        $stmt = $pdo->prepare($sql_media);
-        $stmt->bindValue(':turma_id', $t['turma_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':escola_id', $escola_id);
-        $stmt->bindValue(':ano_letivo_id', $ano_letivo_id, PDO::PARAM_INT);
-        $stmt->execute();
-        $row_media = $stmt->fetch();
-        $media = $row_media ? $row_media['media_geral'] : 0.0;
-
-        // Total de faltas na turma no ano
-        $sql_faltas = "SELECT COUNT(*) AS total_faltas
-                       FROM faltas f
-                       WHERE f.turma_id = :turma_id
-                         AND f.escola_id = :escola_id
-                         AND f.ano_letivo_id = :ano_letivo_id
-                         AND f.status = 'falta'";
-        $stmt = $pdo->prepare($sql_faltas);
-        $stmt->bindValue(':turma_id', $t['turma_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':escola_id', $escola_id);
-        $stmt->bindValue(':ano_letivo_id', $ano_letivo_id, PDO::PARAM_INT);
-        $stmt->execute();
-        $row_faltas = $stmt->fetch();
-        $total_faltas = $row_faltas ? (int)$row_faltas['total_faltas'] : 0;
-
-        $relatorio[] = [
-            'turma_nome'   => $t['turma_nome'],
-            'turma_serie'  => $t['serie'] ?? '-',
-            'turma_turno'  => $t['turno'],
-            'media_geral'  => $media,
-            'total_faltas' => $total_faltas,
-        ];
     }
 }
 
+// Título da página
+$title = 'Relatórios Pedagógicos';
+// Header padrão
 require_once __DIR__ . '/../partials/header.php';
 ?>
+
 <div class="d-flex page-wrap">
-  <?php require_once __DIR__ . '/../partials/admin_sidebar.php'; ?>
-  <div class="content-area p-4">
-    <?php require_once __DIR__ . '/../partials/top_panel.php'; ?>
-    <div class="page-card p-4">
-      <div class="page-title mb-3">Relatórios da escola</div>
+    <?php // Menu lateral do admin
+    require_once __DIR__ . '/../partials/admin_sidebar.php'; ?>
 
-      <!-- Filtros -->
-      <div class="row mb-3">
-        <div class="col-md-4">
-          <label class="form-label">Ano Letivo</label>
-          <select name="ano_letivo_id" class="form-control"
-                  onchange="location.href='<?= base_url('admin/relatorios.php') ?>?ano_letivo_id='+this.value+'&turma_id=<?= $turma_id ?>';">
-            <?php foreach ($anos_letivos as $a): ?>
-              <option value="<?= $a['id'] ?>" <?= $a['id'] == $ano_letivo_id ? 'selected' : '' ?>>
-                <?= e($a['ano']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Turma (opcional)</label>
-          <select name="turma_id" class="form-control"
-                  onchange="location.href='<?= base_url('admin/relatorios.php') ?>?ano_letivo_id=<?= $ano_letivo_id ?>&turma_id='+this.value;">
-            <option value="0" <?= $turma_id == 0 ? 'selected' : '' ?>>Todas as turmas</option>
-            <?php foreach ($turmas as $t): ?>
-              <option value="<?= $t['id'] ?>" <?= $t['id'] == $turma_id ? 'selected' : '' ?>>
-                <?= e($t['nome']) ?> (<?= e($t['serie'] ?? '-') ?> - <?= e($t['turno']) ?>)
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-      </div>
+    <div class="content-area p-4">
+        <?php // Painel superior
+        require_once __DIR__ . '/../partials/top_panel.php'; ?>
 
-      <?php if ($erro): ?>
-        <div class="alert alert-danger"><?= e($erro) ?></div>
-      <?php elseif (empty($relatorio)): ?>
-        <div class="alert alert-info">
-          Não há dados de notas/faltas para o ano letivo e turma escolhidos.
+        <div class="container-fluid mt-4">
+            <!-- Título e Seleção de Turma -->
+            <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 15px;">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="fw-bold text-secondary mb-1">Relatórios Pedagógicos</h4>
+                        <p class="text-muted mb-0">Visualize os registros enviados pelos professores e pela IA</p>
+                    </div>
+                    <div class="col-md-6 mt-3 mt-md-0">
+                        <form method="GET" class="d-flex gap-2">
+                            <input type="hidden" name="tipo" value="<?= e($tipoRelatorio) ?>">
+                            <select name="turma_id" class="form-select shadow-sm" style="border-radius: 10px;" onchange="this.form.submit()">
+                                <option value="">Selecione uma Turma</option>
+                                <?php foreach ($turmas as $t): ?>
+                                    <option value="<?= $t['id'] ?>" <?= $turmaId === (int)$t['id'] ? 'selected' : '' ?>>
+                                        <?= e($t['nome']) ?> (<?= e($t['serie']) ?> - <?= e($t['turno']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <?php if ($turmaId > 0): ?>
+                <!-- Abas de Navegação -->
+                <ul class="nav nav-pills mb-4 bg-white p-2 shadow-sm rounded-pill d-inline-flex">
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill px-4 <?= $tipoRelatorio === 'ia' ? 'active' : '' ?>" 
+                           href="?turma_id=<?= $turmaId ?>&tipo=ia">
+                            <i class="bi bi-robot me-2"></i>Relatório IA
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill px-4 <?= $tipoRelatorio === 'professor' ? 'active' : '' ?>" 
+                           href="?turma_id=<?= $turmaId ?>&tipo=professor">
+                            <i class="bi bi-person-workspace me-2"></i>Relatório Professor
+                        </a>
+                    </li>
+                </ul>
+
+                <?php if (!empty($relatorios)): ?>
+                    <div class="row">
+                        <?php foreach ($relatorios as $rel): ?>
+                            <div class="col-12 mb-3">
+                                <div class="card border-0 shadow-sm" style="border-radius: 15px; border-left: 5px solid <?= $tipoRelatorio === 'ia' ? '#8e44ad' : '#3498db' ?>;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h5 class="fw-bold text-primary mb-1">
+                                                    <?php if ($rel['aluno_id'] == 0): ?>
+                                                        <i class="bi bi-people-fill me-2"></i>Relatório da Turma
+                                                    <?php else: ?>
+                                                        <i class="bi bi-person-badge me-2"></i><?= e($rel['aluno_nome']) ?>
+                                                    <?php endif; ?>
+                                                </h5>
+                                                <p class="text-muted small mb-0">
+                                                    <i class="bi bi-person-circle me-1"></i> Solicitado por: <?= e($rel['professor_nome']) ?>
+                                                </p>
+                                            </div>
+                                            <span class="badge bg-light text-secondary border px-3 py-2" style="border-radius: 8px;">
+                                                <i class="bi bi-calendar3 me-2"></i><?= date('d/m/Y H:i', strtotime($rel['criado_em'])) ?>
+                                            </span>
+                                        </div>
+                                        <div class="p-3 bg-light rounded-3 text-secondary" style="white-space: pre-wrap; line-height: 1.6;">
+                                            <?= e($rel['conteudo']) ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="card border-0 shadow-sm p-5 text-center" style="border-radius: 15px;">
+                        <i class="bi bi-journal-x text-muted" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3 text-secondary">Nenhum relatório encontrado</h5>
+                        <p class="text-muted">Não há registros de <?= $tipoRelatorio === 'ia' ? 'IA' : 'professores' ?> para a turma selecionada até o momento.</p>
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="card border-0 shadow-sm p-5 text-center" style="border-radius: 15px;">
+                    <i class="bi bi-arrow-up-circle text-primary opacity-25" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-secondary">Aguardando Seleção</h5>
+                    <p class="text-muted">Selecione uma turma acima para visualizar os relatórios correspondentes.</p>
+                </div>
+            <?php endif; ?>
         </div>
-      <?php else: ?>
-        <div class="table-responsive">
-          <table class="table table-striped table-hover mb-0">
-            <thead class="table-dark">
-              <tr>
-                <th>Turma</th>
-                <th>Série</th>
-                <th>Turno</th>
-                <th>Média geral</th>
-                <th>Total de faltas</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($relatorio as $r): ?>
-                <tr>
-                  <td><?= e($r['turma_nome']) ?></td>
-                  <td><?= e($r['turma_serie']) ?></td>
-                  <td><?= e($r['turma_turno']) ?></td>
-                  <td><?= number_format($r['media_geral'], 2) ?></td>
-                  <td><?= e($r['total_faltas']) ?></td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
     </div>
-  </div>
 </div>
-<?php require_once __DIR__ . '/../partials/footer.php'; ?>
+
+<?php // Footer padrão
+require_once __DIR__ . '/../partials/footer.php'; ?>

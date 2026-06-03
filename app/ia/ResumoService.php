@@ -1,78 +1,84 @@
 <?php
+
 // app/ia/ResumoService.php
 
 require_once __DIR__ . '/prompts.php';
 require_once __DIR__ . '/../config/config.php';
 
 class ResumoService {
+
     private $apiKey;
 
     public function __construct() {
-        $this->apiKey = GEMINI_API_KEY ?? null;
-        if(!$this->apiKey) {
-            throw new Exception("Chave de API do Gemini não configurada.");
+        $this->apiKey = GEMINI_API_KEY ?? null; // Pegando da config
+        if (!$this->apiKey) {
+            throw new Exception("Gemini API Key não configurada.");
         }
-    }
-
-    public function gerarResumo($aluno_id) {
-        $registros = $this->buscarRegistrosAluno($aluno_id);
-
-        if(empty($registros)){
-            return "Nenhum registro de observação encontrado para este aluno.";
-        }
-
-        $textoHistorico = "";
-        foreach($registros as $r) {
-            $textoHistorico .= "Data: " . ($r['data'] ?? 'Não informada') . "\n";
-            $textoHistorico .= "Tipo: " . $r['tipo'] . "\n";
-            $textoHistorico .= "Observação: " . $r['texto'] . "\n";
-        }
-
-        $prompt = getPromptResumoAluno($textoHistorico);
-
-        return $this->chamarGemini($prompt);
     }
 
     /**
-     * Busca observações de várias tabelas
+     * Gera resumo do histórico do aluno
      */
+    public function gerarResumo($aluno_id) {
+        // 1. Busca o histórico do aluno
+        $historicos = $this->buscarHistoricoAluno($aluno_id);
 
-    private function buscarRegistrosAluno($aluno_id){
-        global $pdo;
+        if (empty($historicos)) {
+            return "Nenhum registro encontrado no histórico deste aluno.";
+        }
 
-        $registros = [];
+        // 2. Monta o texto completo do histórico
+        $textoHistorico = "";
+        foreach ($historicos as $h) {
+            $textoHistorico .= "Data: " . $h['data'] . "\n";
+            $textoHistorico .= "Professor: " . $h['professor'] . "\n";
+            $textoHistorico .= "Observação: " . $h['texto'] . "\n\n";
+        }
 
-        // 1. Observação das notas. vai tomando
-        $stmt = $pdo->prepare("
-        SELECT data_lancamento AS data, 'Nota' AS tipo, observacao AS texto
-        FROM notas
-        WHERE aluno_id = ? AND observacao IS NOT NULL AND observacao != ''
-        ORDER BY data_lancamento DESC
-        ");
-        $stmt->execute([$aluno_id]);
-        $registros = array_merge($registros, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        // 3. Pega o prompt
+        $prompt = getPromptResumoAluno($textoHistorico);
 
-        // 2. Observação das Presenças
-        $stmt = $pdo->prepare("
-        SELECT criado_em AS data, 'Presença' AS tipo, observacao AS texto
-        FROM presencas
-        WHERE aluno_id = ? AND observacao IS NOT NULL AND observacao != ''
-        ORDER BY criado_em DESC
-        ");
-        $stmt->execute([$aluno_id]);
-        $registros = array_merge($registros, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        // 4. Chama o Gemini
+        $resumo = $this->chamarGemini($prompt);
 
-        return $registros;
+        return $resumo;
     }
 
+    /**
+     * Busca histórico no banco (ajuste conforme sua model)
+     */
+    private function buscarHistoricoAluno($aluno_id) {
+        // Exemplo usando sua estrutura atual
+        global $pdo; // se você estiver usando PDO no config
+
+        $stmt = $pdo->prepare("
+            SELECT data, professor, texto 
+            FROM historico_aluno 
+            WHERE aluno_id = ? 
+            ORDER BY data DESC
+        ");
+        $stmt->execute([$aluno_id]);
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Chamada real para a API do Gemini
+     */
     private function chamarGemini($prompt) {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $this->apiKey;
 
         $data = [
-            "contents" => [["parts" => [["text" => $prompt]]]],
+            "contents" => [
+                [
+                    "parts" => [
+                        ["text" => $prompt]
+                    ]
+                ]
+            ],
             "generationConfig" => [
                 "temperature" => 0.7,
-                "maxOutputTokens" => 1000
+                "maxOutputTokens" => 1000,
             ]
         ];
 
@@ -80,17 +86,27 @@ class ResumoService {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json'
+        ]);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        if($httpCode !== 200) {
-            return "Erro na chamada à API Gemini (Código $httpCode)";
+        if ($httpCode !== 200) {
+            if ($httpCode === 429) {
+                return "Limite de requisições da API Gemini atingido. Aguarde alguns minutos e tente novamente.";
+            }
+            if ($httpCode === 401 || $httpCode === 403) {
+                return "Chave da API Gemini inválida ou sem permissão. Verifique a configuração.";
+            }
+            return "Erro na API Gemini (HTTP $httpCode). Tente novamente mais tarde.";
         }
 
         $result = json_decode($response, true);
-        return $result['candidates'][0]['content']['parts'][0]['text'] ?? "Erro no resumo";
+
+        // Extrai o texto da resposta
+        return $result['candidates'][0]['content']['parts'][0]['text'] ?? "Não foi possível gerar o resumo.";
     }
 }

@@ -16,7 +16,7 @@ $notasModel = new NotaModel($pdo); // Inicia models
 $faltaModel = new FaltaModel($pdo);
 $periodoModel = new PeriodoLetivoModel($pdo);
 
-$periodos = $periodoModel->listarPorAno($anoLetivoId, $escolaId); // Busca bimestres
+$periodos = $periodoModel->listarPorAno($anoLetivoId, $escolaId); // Busca bimestres/trimestres
 $boletim = $notasModel->buscarNotasCompletasAluno($alunoId, $anoLetivoId); // Dados da tabela principal
 $estatisticasFrequencia = $faltaModel->buscarEstatisticasFrequenciaMensal($alunoId, $anoLetivoId); // Dados mensais
 $diasFaltas = $faltaModel->buscarDiasFaltasMensais($alunoId, $anoLetivoId); // Datas das faltas
@@ -74,7 +74,7 @@ require_once __DIR__ . '/../partials/header.php'; // Topo padrao
                             <tr>
                                 <th rowspan="2" class="text-start py-3">Áreas de Conhecimento / Disciplinas</th>
                                 <?php foreach ($periodos as $p): ?>
-                                    <th colspan="3"><?= e($p['nome']) ?></th>
+                                    <th colspan="3"><?= e($p['nome']) ?></th> <!-- Colunas fixas baseadas nos periodos da escola -->
                                 <?php endforeach; ?>
                                 <th rowspan="2">AP FINAL</th>
                                 <th rowspan="2">RECUP.</th>
@@ -98,8 +98,8 @@ require_once __DIR__ . '/../partials/header.php'; // Topo padrao
                                 <tr>
                                     <td class="text-start fw-bold text-uppercase"><?= e($disciplina) ?></td>
                                     <?php foreach ($periodos as $p): 
-                                        $n = $dados[$p['id']]['nota'] ?? '-';
-                                        $f = $dados[$p['id']]['faltas'] ?? 0;
+                                        $n = $dados[$p['id']]['nota'] ?? '-'; // Mostra '-' se nao tiver nota
+                                        $f = $dados[$p['id']]['faltas'] ?? 0; // Mostra 0 se nao tiver faltas
                                         if ($n !== '-') { $somaNotas += (float)$n; $contNotas++; }
                                         $faltasPorPeriodo[$p['id']] += (int)$f;
                                     ?>

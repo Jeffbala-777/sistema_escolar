@@ -35,50 +35,21 @@ function adminMenuAtivo($pagina)
 
     </a>
 
-    <!-- Link para gestao de alunos (antigo usuarios) -->
     <a
-        class="<?= adminMenuAtivo('alunos.php') ?>"
-        href="<?= base_url('admin/alunos.php') ?>">
+        class="<?= adminMenuAtivo('selecionar_turma.php') ?> <?= adminMenuAtivo('desempenho.php') ?>"
+        href="<?= base_url('admin/selecionar_turma.php') ?>">
 
-        <i class="bi bi-people"></i>
-        Alunos
+        <i class="bi bi-graph-up-arrow"></i>
+        Desempenho
 
     </a>
 
     <a
-        class="<?= adminMenuAtivo('professores.php') ?>"
-        href="<?= base_url('admin/professores.php') ?>">
+        class="<?= adminMenuAtivo('relatorios.php') ?>"
+        href="<?= base_url('admin/relatorios.php') ?>">
 
-        <i class="bi bi-mortarboard"></i>
-        Professores
-
-    </a>
-
-    <a
-        class="<?= adminMenuAtivo('turmas.php') ?>"
-        href="<?= base_url('admin/turmas.php') ?>">
-
-        <i class="bi bi-grid"></i>
-        Turmas
-
-    </a>
-
-    <a
-        class="<?= adminMenuAtivo('disciplinas.php') ?>"
-        href="<?= base_url('admin/disciplinas.php') ?>">
-
-        <i class="bi bi-book"></i>
-        Disciplinas
-
-    </a>
-
-    <!-- Link para vincular alunos e professores -->
-    <a
-        class="<?= adminMenuAtivo('vinculos.php') ?>"
-        href="<?= base_url('admin/vinculos.php') ?>">
-
-        <i class="bi bi-link-45deg"></i>
-        Vínculos
+        <i class="bi bi-journal-text"></i>
+        Relatórios
 
     </a>
 

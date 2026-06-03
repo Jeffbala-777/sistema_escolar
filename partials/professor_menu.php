@@ -45,11 +45,11 @@ function professorMenuAtivo($pagina)
     </a>
 
     <a
-        class="<?= professorMenuAtivo('meus_alunos.php') ?>"
-        href="<?= base_url('professor/minhas_turmas.php') ?>">
+        class="<?= professorMenuAtivo('selecionar_turma.php') || professorMenuAtivo('desempenho.php') || professorMenuAtivo('relatorios_turma.php') ? 'active-menu' : '' ?>"
+        href="<?= base_url('professor/selecionar_turma.php') ?>">
 
-        <i class="bi bi-people"></i>
-        Meus Alunos
+        <i class="bi bi-graph-up-arrow"></i>
+        Desempenho
 
     </a>
 
