@@ -22,11 +22,16 @@ if (!$turma) { // Se nao achar turma
     exit('Acesso negado ou turma não encontrada.');
 }
 
-// Pega se a escola usa nota 10 ou 100
-$notaMaxima = (float)($escolaModel->buscarConfiguracao($escolaId, 'nota_maxima') ?? 10);
+// Busca informações da escola para definir o tipo de período e nota máxima
+$escolaInfo = $escolaModel->buscarPorId($escolaId);
+$tipoPeriodo = $escolaInfo['tipo_periodo'] ?? 'bimestral';
+
+// Pega se a escola usa nota 10 ou 100 (Bimestral costuma ser 10)
+$notaMaximaPadrao = ($tipoPeriodo === 'trimestral') ? 100 : 10;
+$notaMaxima = (float)($escolaModel->buscarConfiguracao($escolaId, 'nota_maxima') ?? $notaMaximaPadrao);
 
 $alunos = $ptdModel->listarAlunosTurma($turma['turma_id']); // Lista alunos
-$periodos = $periodoModel->listarPorAno($turma['ano_letivo_id'], $escolaId); // Bimestres
+$periodos = $periodoModel->listarPorAno($turma['ano_letivo_id'], $escolaId); // Períodos
 $notasAtuais = $notasModel->buscarNotasTurma($turma['turma_id'], $turma['disciplina_id'], $turma['ano_letivo_id']); // Notas salvas
 
 $mensagem = '';
@@ -38,30 +43,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sucesso = true;
 
     foreach ($notasPost as $alunoId => $bimestres) {
+        $ordemPeriodo = 1;
         foreach ($bimestres as $periodoId => $valor) {
             if ($valor !== '') { // Se nao for vazio
                 $valor = str_replace(',', '.', $valor); // Aceita virgula
                 $valorFloat = (float)$valor;
 
-                // Valida limite. Se errado, pula esse registro
-                if ($valorFloat > $notaMaxima || $valorFloat < 0) {
-                    $sucesso = false;
-                    continue;
+                // Define limite dinâmico por trimestre (30, 30, 40)
+                $limiteAtual = $notaMaxima;
+                if ($tipoPeriodo === 'trimestral') {
+                    if ($ordemPeriodo == 1) $limiteAtual = 30;
+                    elseif ($ordemPeriodo == 2) $limiteAtual = 30;
+                    elseif ($ordemPeriodo == 3) $limiteAtual = 40;
                 }
 
-                // Grava no banco
-                $res = $notasModel->salvar([
-                    'escola_id' => $escolaId,
-                    'aluno_id' => $alunoId,
-                    'disciplina_id' => $turma['disciplina_id'],
-                    'professor_id' => $professorId,
-                    'ano_letivo_id' => $turma['ano_letivo_id'],
-                    'periodo_id' => $periodoId,
-                    'nota' => (float)$valor,
-                    'tipo' => 'prova'
-                ]);
-                if (!$res) $sucesso = false;
+                // Valida limite. Se errado, pula esse registro
+                if ($valorFloat > $limiteAtual || $valorFloat < 0) {
+                    $sucesso = false;
+                } else {
+                    // Grava no banco
+                    $res = $notasModel->salvar([
+                        'escola_id' => $escolaId,
+                        'aluno_id' => $alunoId,
+                        'disciplina_id' => $turma['disciplina_id'],
+                        'professor_id' => $professorId,
+                        'ano_letivo_id' => $turma['ano_letivo_id'],
+                        'periodo_id' => $periodoId,
+                        'nota' => (float)$valor,
+                        'tipo' => 'prova'
+                    ]);
+                    if (!$res) $sucesso = false;
+                }
             }
+            $ordemPeriodo++;
         }
     }
 
@@ -135,25 +149,34 @@ require_once __DIR__ . '/../partials/header.php'; // Topo
                             <tr>
                                 <td style="text-align: center; border: 1px solid #333;"><?= $i++ ?></td>
                                 <td style="border: 1px solid #333;"><?= e($aluno['nome_completo']) ?></td>
-                                <?php foreach ($periodos as $p): 
-                                    $nota = $notasAtuais[$aluno['id']][$p['id']] ?? '';
-                                    if ($nota !== '') { $soma += (float)$nota; $cont++; }
-                                ?>
-                                    <td style="padding: 2px; border: 1px solid #333;">
-                                        <!-- Campo de nota com validacao visual -->
-                                        <input type="text"
-                                               name="notas[<?= $aluno['id'] ?>][<?= $p['id'] ?>]"
-                                               value="<?= $nota ?>"
-                                               class="form-control form-control-sm nota-input"
-                                               data-nota-maxima="<?= $notaMaxima ?>"
-                                               style="text-align: center; border: none; padding: 2px;"
-                                               placeholder="0.0"
-                                               title="Nota máxima: <?= $notaMaxima ?>">
-                                    </td>
-                                    <td style="text-align: center; border: 1px solid #333; background-color: #f9f9f9; vertical-align: middle;">
-                                        <?= $nota ?>
-                                    </td>
-                                <?php endforeach; ?>
+                                <?php 
+                                    $ordemP = 1;
+                                    foreach ($periodos as $p): 
+                                        $nota = $notasAtuais[$aluno['id']][$p['id']] ?? '';
+                                        if ($nota !== '') { $soma += (float)$nota; $cont++; }
+                                        
+                                        // Limite visual dinâmico
+                                        $limiteV = $notaMaxima;
+                                        if ($tipoPeriodo === 'trimestral') {
+                                            if ($ordemP == 1) $limiteV = 30;
+                                            elseif ($ordemP == 2) $limiteV = 30;
+                                            elseif ($ordemP == 3) $limiteV = 40;
+                                        }
+                                    ?>
+                                        <td style="padding: 2px; border: 1px solid #333;">
+                                            <input type="text"
+                                                   name="notas[<?= $aluno['id'] ?>][<?= $p['id'] ?>]"
+                                                   value="<?= $nota ?>"
+                                                   class="form-control form-control-sm nota-input"
+                                                   data-nota-maxima="<?= $limiteV ?>"
+                                                   style="text-align: center; border: none; padding: 2px;"
+                                                   placeholder="0.0"
+                                                   title="Nota máxima: <?= $limiteV ?>">
+                                        </td>
+                                        <td style="text-align: center; border: 1px solid #333; background-color: #f9f9f9; vertical-align: middle;">
+                                            <?= $nota ?>
+                                        </td>
+                                <?php $ordemP++; endforeach; ?>
                                 <td style="text-align: center; border: 1px solid #333; font-weight: bold; background-color: #eee; vertical-align: middle;">
                                     <?php 
                                         if ($cont > 0) { // Calcula media

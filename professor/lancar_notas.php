@@ -17,6 +17,13 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute([$alunoId]);
 $aluno = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Busca escala de nota da escola
+$sqlEscola = "SELECT escala_nota FROM escolas WHERE id = ? LIMIT 1";
+$stmtEscola = $pdo->prepare($sqlEscola);
+$stmtEscola->execute([$usuario['escola_id']]);
+$escola = $stmtEscola->fetch(PDO::FETCH_ASSOC);
+$escalaNota = (float)($escola['escala_nota'] ?? 10);
+
 $mensagem = '';
 $erro = '';
 
@@ -28,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $nota = (float) ($_POST['nota'] ?? 0);
 
-        if ($nota < 0 || $nota > 10) {
-            throw new Exception('A nota deve ser entre 0 e 10.');
+        if ($nota < 0 || $nota > $escalaNota) {
+            throw new Exception("A nota deve ser entre 0 e {$escalaNota}.");
         }
 
         $model->salvar([
@@ -93,20 +100,32 @@ require_once __DIR__ . '/../partials/header.php';
             <label class="form-label">Período</label>
 
             <select name="periodo_id" class="form-select" required>
-                <option value="1">1º Bimestre</option>
-                <option value="2">2º Bimestre</option>
-                <option value="3">3º Bimestre</option>
-                <option value="4">4º Bimestre</option>
+                <?php 
+                require_once __DIR__ . '/../app/models/PeriodoLetivoModel.php';
+                $periodoModel = new PeriodoLetivoModel($pdo);
+                $periodos = $periodoModel->listarPorAno($anoLetivoId, $usuario['escola_id']);
+                
+                if (empty($periodos)) {
+                    // Fallback para 4 bimestres se não houver períodos cadastrados
+                    for ($i = 1; $i <= 4; $i++) {
+                        echo "<option value=\"$i\">{$i}º Bimestre</option>";
+                    }
+                } else {
+                    foreach ($periodos as $p) {
+                        echo "<option value=\"{$p['id']}\">" . e($p['nome']) . "</option>";
+                    }
+                }
+                ?>
             </select>
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Nota</label>
+            <label class="form-label">Nota (0-<?= $escalaNota ?>)</label>
             <input
                 type="number"
                 step="0.01"
                 min="0"
-                max="10"
+                max="<?= $escalaNota ?>"
                 name="nota"
                 class="form-control"
                 required>

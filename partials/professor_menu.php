@@ -40,12 +40,12 @@ function professorMenuAtivo($pagina)
         href="<?= base_url('professor/minhas_turmas.php') ?>">
 
         <i class="bi bi-grid"></i>
-        Minhas Turmas
+        Notase Faltas
 
     </a>
 
     <a
-        class="<?= professorMenuAtivo('selecionar_turma.php') || professorMenuAtivo('desempenho.php') || professorMenuAtivo('relatorios_turma.php') ? 'active-menu' : '' ?>"
+        class="<?= in_array($paginaAtual, ['selecionar_turma.php', 'desempenho.php', 'relatorios_turma.php', 'relatorios_aluno.php', 'historico_relatorios.php']) ? 'active-menu' : '' ?>"
         href="<?= base_url('professor/selecionar_turma.php') ?>">
 
         <i class="bi bi-graph-up-arrow"></i>

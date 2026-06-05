@@ -1,5 +1,4 @@
 <?php
-
 // app/ia/prompts.php
 
 function getPromptResumoAluno($historicoTexto) {

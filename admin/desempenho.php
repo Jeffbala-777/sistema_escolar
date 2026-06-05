@@ -129,7 +129,7 @@ if (isset($_POST['gerar_analise'])) {
         
         $relatorioModel->adicionar([
             'escola_id' => $escolaId,
-            'aluno_id' => 0, // 0 indica relatório geral da turma
+            'aluno_id' => null, // null indica relatório geral da turma
             'professor_id' => $_SESSION['usuario']['id'],
             'turma_id' => $turmaId,
             'conteudo' => $analiseIA,
@@ -164,7 +164,7 @@ require_once __DIR__ . '/../partials/header.php';
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h4 class="fw-bold text-secondary mb-1">Desempenho: <?= e($turmaAtual['nome']) ?></h4>
-                        <p class="text-muted mb-0">Análise o desempenho da turna de cada disciplina</p>
+                        <p class="text-muted mb-0">Análise o desempenho da turma de cada disciplina</p>
                     </div>
                 </div>
             </div>

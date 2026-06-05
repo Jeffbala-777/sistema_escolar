@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Middleware de autenticação do professor
-require_once __DIR__ . '/../app/middleware/verificar_admin.php';
+require_once __DIR__ . '/../app/middleware/verificar_professor.php';
 // Conexão com o banco de dados
 require_once __DIR__ . '/../app/database/database.php';
 // Model de Turmas

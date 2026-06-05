@@ -48,7 +48,7 @@ $stmt->bindValue(':turma_id', $turma_id, PDO::PARAM_INT);
 $stmt->bindValue(':professor_id', $professor_id, PDO::PARAM_INT);
 $stmt->bindValue(':escola_id', $escola_id);
 $stmt->execute();
-$disciplinas = $stmt->fetchAll();
+$disciplinas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/../partials/header.php';
 ?>

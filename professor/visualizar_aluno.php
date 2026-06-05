@@ -128,8 +128,22 @@ require_once __DIR__ . '/../partials/header.php';
                                         // Pega a nota ou coloca '-' se nao houver nota lancada
                                         $n = $dados[$p['id']]['nota'] ?? '-';
                                         if ($n !== '-') { $somaNotas += (float)$n; $contNotas++; }
+                                        
+                                        $exibicaoNota = $n;
+                                        $classeNota = "fw-bold";
+                                        $titleNota = "";
+
+                                        if ($n !== '-') {
+                                            if ((float)$n == 0) {
+                                                $exibicaoNota = "0.0*";
+                                                $classeNota .= " text-warning";
+                                                $titleNota = "Nota não registrada ou zero";
+                                            } elseif ((float)$n < 6) {
+                                                $classeNota .= " text-danger";
+                                            }
+                                        }
                                     ?>
-                                        <td class="fw-bold <?= $n !== '-' && (float)$n < 6 ? 'text-danger' : '' ?>"><?= $n ?></td>
+                                        <td class="<?= $classeNota ?>" title="<?= $titleNota ?>"><?= $exibicaoNota ?></td>
                                     <?php endforeach; ?>
                                     <!-- Calcula a media final da disciplina -->
                                     <?php $media = $contNotas > 0 ? round($somaNotas / $contNotas, 1) : '-'; ?>
@@ -198,3 +212,17 @@ require_once __DIR__ . '/../partials/header.php';
 
 <!-- Inclui o rodape padrao -->
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
+
+<script>
+    // Adiciona uma nota explicativa no final da página se houver notas zero
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasZero = document.querySelector('.text-warning');
+        if (hasZero) {
+            const container = document.querySelector('.content-area .p-4');
+            const alert = document.createElement('div');
+            alert.className = 'mt-3 small text-muted';
+            alert.innerHTML = '<i class="bi bi-info-circle me-1"></i> * Notas 0.0 com destaque amarelo podem indicar que a nota ainda não foi registrada pelo professor.';
+            container.appendChild(alert);
+        }
+    });
+</script>

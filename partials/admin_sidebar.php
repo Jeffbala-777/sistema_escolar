@@ -45,8 +45,8 @@ function adminMenuAtivo($pagina)
     </a>
 
     <a
-        class="<?= adminMenuAtivo('relatorios.php') ?>"
-        href="<?= base_url('admin/relatorios.php') ?>">
+        class="<?= in_array($paginaAtual, ['relatorios.php', 'relatorios_turma.php', 'historico_relatorios.php']) ? 'active-menu' : '' ?>"
+        href="<?= base_url('admin/relatorios_turma.php') ?>">
 
         <i class="bi bi-journal-text"></i>
         Relatórios

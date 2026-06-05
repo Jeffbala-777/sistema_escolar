@@ -1,5 +1,4 @@
 <?php
-
 // app/ia/ResumoService.php
 
 require_once __DIR__ . '/prompts.php';
@@ -8,11 +7,15 @@ require_once __DIR__ . '/../config/config.php';
 class ResumoService {
 
     private $apiKey;
+    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    private const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
-    public function __construct() {
-        $this->apiKey = GEMINI_API_KEY ?? null; // Pegando da config
+    public function __construct()
+    {
+        $this->apiKey = GROQ_API_KEY ?? null;
+
         if (!$this->apiKey) {
-            throw new Exception("Gemini API Key não configurada.");
+            throw new Exception("GROQ_API_KEY não configurada. Obtenha uma chave gratuita em: https://console.groq.com/keys");
         }
     }
 
@@ -38,9 +41,9 @@ class ResumoService {
         // 3. Pega o prompt
         $prompt = getPromptResumoAluno($textoHistorico);
 
-        // 4. Chama o Gemini
-        $resumo = $this->chamarGemini($prompt);
-
+        // 4. Chama o Groq
+        $resumo = $this->chamarGroqAPI($prompt);
+        
         return $resumo;
     }
 
@@ -63,50 +66,51 @@ class ResumoService {
     }
 
     /**
-     * Chamada real para a API do Gemini
+     * Chamada real para a API do Groq (compatível com OpenAI)
      */
-    private function chamarGemini($prompt) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $this->apiKey;
-
+    private function chamarGroqAPI($prompt)
+    {
         $data = [
-            "contents" => [
+            'model' => self::GROQ_MODEL,
+            'messages' => [
                 [
-                    "parts" => [
-                        ["text" => $prompt]
-                    ]
+                    'role' => 'system',
+                    'content' => 'Você é um assistente pedagógico especializado em análise de histórico escolar.'
+                ],
+                [
+                    'role' => 'user',
+                    'content' => $prompt
                 ]
             ],
-            "generationConfig" => [
-                "temperature" => 0.7,
-                "maxOutputTokens" => 1000,
-            ]
+            'temperature' => 0.7,
+            'max_tokens' => 1000
         ];
 
-        $ch = curl_init($url);
+        $ch = curl_init(self::GROQ_API_URL);
+
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json'
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $this->apiKey
         ]);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
         curl_close($ch);
 
         if ($httpCode !== 200) {
-            if ($httpCode === 429) {
-                return "Limite de requisições da API Gemini atingido. Aguarde alguns minutos e tente novamente.";
-            }
-            if ($httpCode === 401 || $httpCode === 403) {
-                return "Chave da API Gemini inválida ou sem permissão. Verifique a configuração.";
-            }
-            return "Erro na API Gemini (HTTP $httpCode). Tente novamente mais tarde.";
+            $errorData = json_decode($response, true);
+            $errorMessage = $errorData['error']['message'] ?? 'Erro desconhecido';
+            return "Erro Groq HTTP {$httpCode}: {$errorMessage}";
         }
 
         $result = json_decode($response, true);
 
-        // Extrai o texto da resposta
-        return $result['candidates'][0]['content']['parts'][0]['text'] ?? "Não foi possível gerar o resumo.";
+        return $result['choices'][0]['message']['content']
+            ?? 'Não foi possível gerar o resumo.';
     }
 }

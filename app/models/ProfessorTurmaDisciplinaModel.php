@@ -131,4 +131,22 @@ class ProfessorTurmaDisciplinaModel
         $stmt->execute([$turmaId, $escolaId]);
         return (int) $stmt->fetchColumn();
     }
+
+    public function listarProfessoresTurma(int $turmaId, int $escolaId)
+    {
+        $sql = "
+            SELECT DISTINCT
+                u.id,
+                u.nome_completo
+            FROM professor_turma_disciplina ptd
+            INNER JOIN usuarios u ON u.id = ptd.professor_id
+            WHERE ptd.turma_id = ? 
+            AND ptd.escola_id = ?
+            AND ptd.ativo = 1
+            ORDER BY u.nome_completo ASC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$turmaId, $escolaId]);
+        return $stmt->fetchAll();
+    }
 }

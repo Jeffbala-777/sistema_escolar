@@ -97,24 +97,18 @@ if ($turma && empty($disciplinas)) {
     $erro = 'Você não possui acesso a esta turma.';
 }
 
-$periodos = [
-    [
-        'id' => 1,
-        'nome' => '1º Bimestre'
-    ],
-    [
-        'id' => 2,
-        'nome' => '2º Bimestre'
-    ],
-    [
-        'id' => 3,
-        'nome' => '3º Bimestre'
-    ],
-    [
-        'id' => 4,
-        'nome' => '4º Bimestre'
-    ]
-];
+require_once __DIR__ . '/../app/models/PeriodoLetivoModel.php';
+$periodoModel = new PeriodoLetivoModel($pdo);
+$periodos = $periodoModel->listarPorAno($ano_letivo_id, $escola_id);
+
+if (empty($periodos)) {
+    $periodos = [
+        ['id' => 1, 'nome' => '1º Bimestre'],
+        ['id' => 2, 'nome' => '2º Bimestre'],
+        ['id' => 3, 'nome' => '3º Bimestre'],
+        ['id' => 4, 'nome' => '4º Bimestre']
+    ];
+}
 
 $sql = "
     SELECT
@@ -175,16 +169,18 @@ require_once __DIR__ . '/../partials/header.php';
     <?php else: ?>
 
         <div class="page-card p-4">
-
-            <div class="page-title mb-4">
-
-                Boletim —
-                <?= e($turma['nome']); ?>
-                —
-                <?= e($turma['serie']); ?>
-                —
-                <?= e($turma['turno']); ?>
-
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="page-title mb-0">
+                    Boletim —
+                    <?= e($turma['nome']); ?>
+                    —
+                    <?= e($turma['serie']); ?>
+                    —
+                    <?= e($turma['turno']); ?>
+                </div>
+                <a href="dashboard.php" class="btn btn-secondary btn-sm d-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
             </div>
 
             <div class="table-responsive">
@@ -310,17 +306,7 @@ require_once __DIR__ . '/../partials/header.php';
 
             </div>
 
-            <div class="mt-4">
 
-                <a
-                    href="<?= base_url('professor/dashboard.php'); ?>"
-                    class="btn btn-secondary btn-sm">
-
-                    Voltar
-
-                </a>
-
-            </div>
 
         </div>
 

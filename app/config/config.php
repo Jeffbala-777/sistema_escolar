@@ -15,9 +15,10 @@ define('APP_URL', 'http://localhost/sistema_escolar'); // URL completa
 define('SESSION_NAME', 'ERP_ESCOLAR_SESSION'); // Nome da sessao
 
 // ==========================================
-// Chave do Gemini API
+// Chave da API Groq (Gratuita e Ilimitada)
 // ==========================================
-define('GEMINI_API_KEY', 'AQ.Ab8RN6JtaT6bcywrRHkaCq3QqzvDa3FT9KQijwLNKsYTCIvr1A');
+// Obtenha sua chave gratuita em: https://console.groq.com/keys
+define('GROQ_API_KEY', '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');
 
 // Configura fuso horario e codificacao
 date_default_timezone_set('America/Sao_Paulo');
