@@ -1,117 +1,101 @@
 <?php
+// Ativa tipagem estrita para segurança
+declare(strict_types=1);
 
+// Middleware de autenticação do professor
 require_once __DIR__ . '/../app/middleware/verificar_professor.php';
+// Conexão com o banco de dados
 require_once __DIR__ . '/../app/database/database.php';
+// Model de vínculos professor-turma-disciplina
 require_once __DIR__ . '/../app/models/ProfessorTurmaDisciplinaModel.php';
 
+// Inicializa model
+$ptdModel = new ProfessorTurmaDisciplinaModel($pdo);
+
+// ID do professor logado e escola
+$professorId = (int)$_SESSION['usuario']['id'];
+$escolaId = (int)$_SESSION['usuario']['escola_id'];
+
+// Busca todas as turmas vinculadas ao professor
+$turmas = $ptdModel->listarTurmasProfessor($professorId, $escolaId);
+
+// Título da página
 $title = 'Selecionar Turma';
-
-$model = new ProfessorTurmaDisciplinaModel($pdo);
-
-$professorId = $_SESSION['usuario']['id'];
-$escolaId = $_SESSION['usuario']['escola_id'];
-
-// Buscar apenas as turmas que o professor tem acesso (com suas disciplinas)
-$turmas = $model->listarTurmasProfessor($professorId, $escolaId);
-
+// Header padrão
 require_once __DIR__ . '/../partials/header.php';
 ?>
 
-<?php require_once __DIR__ . '/../partials/top_panel.php'; ?>
-<?php require_once __DIR__ . '/../partials/professor_menu.php'; ?>
+<div class="d-flex page-wrap">
+    <?php // Menu lateral do professor
+    require_once __DIR__ . '/../partials/professor_menu.php'; ?>
 
-<div class="main-content" style="background-color: #f5f5f5; min-height: 100vh; padding: 20px;">
+    <div class="content-area p-4">
+        <?php // Painel superior
+        require_once __DIR__ . '/../partials/top_panel.php'; ?>
 
-    <div class="container-selecao" style="max-width: 1000px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 style="color: #2c3e50; font-weight: 600; margin-bottom: 5px;">Gestão de Turmas</h2>
-                <p style="color: #7f8c8d; margin-bottom: 0;">Selecione uma turma para visualizar o desempenho ou gerenciar relatórios.</p>
+        <div class="container-fluid mt-4">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 style="color: #2c3e50; font-weight: 700; margin-bottom: 10px;">Gestão de Turmas</h2>
+                <p style="color: #7f8c8d;">Selecione uma turma para gerenciar o desempenho ou os relatórios pedagógicos.</p>
             </div>
-            <a href="dashboard.php" class="btn btn-secondary btn-sm d-flex align-items-center gap-2">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-        </div>
 
-        <?php if (!empty($turmas)): ?>
-            <div class="row g-3">
-                <?php 
-                // Agrupar turmas para evitar duplicatas
-                $turmasAgrupadas = [];
-                foreach ($turmas as $turma) {
-                    $key = $turma['turma_id'];
-                    if (!isset($turmasAgrupadas[$key])) {
-                        $turmasAgrupadas[$key] = [
-                            'turma_id' => $turma['turma_id'],
-                            'turma' => $turma['turma'],
-                            'serie' => $turma['serie'],
-                            'ano' => $turma['ano'],
-                            'disciplinas' => []
-                        ];
-                    }
-                    $turmasAgrupadas[$key]['disciplinas'][] = $turma['disciplina'];
-                }
-                ?>
-
-                <?php foreach ($turmasAgrupadas as $turmaInfo): 
-                    $totalFaltas = $model->buscarFaltasPorTurma($turmaInfo['turma_id'], $escolaId);
-                ?>
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; transition: all 0.3s;">
-                        <div class="card-header bg-primary bg-opacity-10 border-0 p-3">
-                            <h6 class="fw-bold text-primary mb-0"><?= e($turmaInfo['turma']) ?></h6>
-                            <small class="text-muted"><?= e($turmaInfo['serie']) ?> • <?= e($turmaInfo['ano']) ?></small>
-                        </div>
-                        <div class="card-body p-3">
-                            <div class="mb-3">
-                                <small class="text-muted d-block fw-bold mb-2">Disciplinas:</small>
-                                <?php foreach ($turmaInfo['disciplinas'] as $disc): ?>
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1">
-                                        <?= e($disc) ?>
-                                    </span>
-                                <?php endforeach; ?>
+            <?php if (!empty($turmas)): ?>
+                <div class="row g-4">
+                    <?php foreach ($turmas as $t): ?>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 15px; overflow: hidden; transition: all 0.3s;">
+                            <div class="card-header bg-primary bg-opacity-10 border-0 p-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="fw-bold text-primary mb-0"><?= e($t['turma']) ?></h5>
+                                    <span class="badge bg-primary rounded-pill"><?= e($t['turno'] ?? 'N/A') ?></span>
+                                </div>
+                                <p class="text-muted small mb-0 mt-1"><?= e($t['disciplina']) ?></p>
                             </div>
-                        </div>
-                        <div class="card-footer bg-white border-0 p-3">
-                            <div class="d-grid gap-2">
-                                <a href="<?= base_url('professor/desempenho.php?turma_id=' . $turmaInfo['turma_id']) ?>" 
-                                   class="btn btn-sm btn-info" style="border-radius: 8px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                    <i class="bi bi-graph-up"></i> Desempenho
-                                </a>
-                                <a href="<?= base_url('professor/relatorios_turma.php?turma_id=' . $turmaInfo['turma_id']) ?>" 
-                                   class="btn btn-sm btn-success" style="border-radius: 8px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                    <i class="bi bi-clipboard"></i> Relatórios
-                                </a>
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-light rounded-circle p-2 me-3">
+                                        <i class="bi bi-people text-secondary"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Visão Geral</small>
+                                        <span class="fw-bold">Acesso ao Desempenho</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white border-0 p-4 pt-0">
+                                <div class="d-grid gap-2">
+                                    <a href="<?= base_url('professor/desempenho.php?turma_id=' . $t['turma_id']) ?>" 
+                                       class="btn btn-info w-100 fw-bold py-2 shadow-sm text-white" 
+                                       style="border-radius: 10px; background-color: #0dcaf0; border: none;">
+                                        <i class="bi bi-graph-up-arrow me-2"></i> Analisar Desempenho
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div class="text-center py-5">
-                <i class="bi bi-inbox text-muted fs-1 d-block mb-3"></i>
-                <p class="text-muted">Você não possui turmas vinculadas.</p>
-            </div>
-        <?php endif; ?>
+            <?php else: ?>
+                <div class="card border-0 shadow-sm p-5 text-center" style="border-radius: 15px;">
+                    <i class="bi bi-grid-3x3-gap text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-secondary">Nenhuma turma vinculada</h5>
+                    <p class="text-muted">Você ainda não possui turmas vinculadas ao seu perfil nesta escola.</p>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
 <style>
     .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+        transform: translateY(-8px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
     }
-
     .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    }
-
-    .btn {
-        transition: all 0.3s ease;
+        filter: brightness(1.1);
+        transform: scale(1.02);
     }
 </style>
 
-<?php require_once __DIR__ . '/../partials/footer.php'; ?>
+<?php // Footer padrão
+require_once __DIR__ . '/../partials/footer.php'; ?>

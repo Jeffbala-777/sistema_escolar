@@ -8,6 +8,7 @@ require_once __DIR__ . '/../app/models/TurmaModel.php';
 $professorId = $_SESSION['usuario']['id'];
 $escolaId = $_SESSION['usuario']['escola_id'];
 $turmaId = isset($_GET['turma_id']) ? (int)$_GET['turma_id'] : 0;
+$disciplinaId = isset($_GET['disciplina_id']) ? (int)$_GET['disciplina_id'] : 0;
 
 $ptdModel = new ProfessorTurmaDisciplinaModel($pdo);
 $turmaModel = new TurmaModel($pdo);
@@ -27,7 +28,27 @@ if (!$turmaAtual) {
     exit;
 }
 
-// Buscar faltas gerais da turma por mês
+// Busca as disciplinas do professor nesta turma
+$sqlDP = "SELECT d.id, d.nome FROM disciplinas d 
+          INNER JOIN professor_turma_disciplina ptd ON ptd.disciplina_id = d.id 
+          WHERE ptd.professor_id = :pid AND ptd.turma_id = :tid AND ptd.escola_id = :eid AND ptd.ativo = 1";
+$stmtDP = $pdo->prepare($sqlDP);
+$stmtDP->execute([':pid' => $professorId, ':tid' => $turmaId, ':eid' => $escolaId]);
+$disciplinasProfessor = $stmtDP->fetchAll(PDO::FETCH_ASSOC);
+
+if ($disciplinaId <= 0 && !empty($disciplinasProfessor)) {
+    $disciplinaId = (int)$disciplinasProfessor[0]['id'];
+}
+
+$disciplinaNome = '';
+foreach ($disciplinasProfessor as $dp) {
+    if ((int)$dp['id'] === $disciplinaId) {
+        $disciplinaNome = $dp['nome'];
+        break;
+    }
+}
+
+// Buscar faltas gerais da turma por mês - FILTRADO POR DISCIPLINA DO PROFESSOR
 $sqlFaltasTurma = "
     SELECT 
         DATE_FORMAT(a.data_aula, '%m/%Y') as mes,
@@ -36,6 +57,8 @@ $sqlFaltasTurma = "
     INNER JOIN aulas a ON a.id = p.aula_id
     INNER JOIN professor_turma_disciplina ptd ON ptd.id = a.professor_turma_disciplina_id
     WHERE ptd.turma_id = :turma_id
+    AND ptd.disciplina_id = :disciplina_id
+    AND ptd.professor_id = :professor_id
     AND p.status = 'falta'
     AND p.escola_id = :escola_id
     GROUP BY DATE_FORMAT(a.data_aula, '%m/%Y')
@@ -43,10 +66,15 @@ $sqlFaltasTurma = "
 ";
 
 $stmtFaltasTurma = $pdo->prepare($sqlFaltasTurma);
-$stmtFaltasTurma->execute([':turma_id' => $turmaId, ':escola_id' => $escolaId]);
+$stmtFaltasTurma->execute([
+    ':turma_id' => $turmaId, 
+    ':disciplina_id' => $disciplinaId,
+    ':professor_id' => $professorId,
+    ':escola_id' => $escolaId
+]);
 $faltasPorMesTurma = $stmtFaltasTurma->fetchAll();
 
-// Buscar alunos da turma com suas faltas
+// Buscar alunos da turma com suas faltas - FILTRADO POR DISCIPLINA DO PROFESSOR
 $sqlAlunosFaltas = "
     SELECT 
         u.id,
@@ -58,7 +86,8 @@ $sqlAlunosFaltas = "
     INNER JOIN aulas a ON a.id = p.aula_id
     INNER JOIN professor_turma_disciplina ptd ON ptd.id = a.professor_turma_disciplina_id
     WHERE m.turma_id = :turma_id
-    AND ptd.turma_id = :turma_id_2
+    AND ptd.disciplina_id = :disciplina_id
+    AND ptd.professor_id = :professor_id
     AND p.status = 'falta'
     AND p.escola_id = :escola_id
     AND m.status = 'ativa'
@@ -67,7 +96,12 @@ $sqlAlunosFaltas = "
 ";
 
 $stmtAlunosFaltas = $pdo->prepare($sqlAlunosFaltas);
-$stmtAlunosFaltas->execute([':turma_id' => $turmaId, ':turma_id_2' => $turmaId, ':escola_id' => $escolaId]);
+$stmtAlunosFaltas->execute([
+    ':turma_id' => $turmaId, 
+    ':disciplina_id' => $disciplinaId,
+    ':professor_id' => $professorId,
+    ':escola_id' => $escolaId
+]);
 $alunosComFaltas = $stmtAlunosFaltas->fetchAll();
 
 $title = 'Controle de Faltas - ' . $turmaAtual['turma'];
@@ -96,7 +130,15 @@ require_once __DIR__ . '/../partials/header.php';
                     </div>
                     <div>
                         <h4 class="fw-bold mb-0 text-dark">Controle de Faltas</h4>
-                        <p class="text-muted mb-0">Turma: <span class="fw-bold"><?= e($turmaAtual['turma']) ?></span> | Disciplina: <span class="fw-bold"><?= e($turmaAtual['disciplina']) ?></span></p>
+                        <p class="text-muted mb-0">
+                            Turma: <span class="fw-bold"><?= e($turmaAtual['turma']) ?></span> | 
+                            Disciplina: 
+                            <select class="form-select d-inline-block w-auto ms-1 py-0" onchange="location.href='?turma_id=<?= $turmaId ?>&disciplina_id=' + this.value">
+                                <?php foreach ($disciplinasProfessor as $dp): ?>
+                                    <option value="<?= $dp['id'] ?>" <?= (int)$dp['id'] === $disciplinaId ? 'selected' : '' ?>><?= e($dp['nome']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </p>
                     </div>
                 </div>
                 <div class="btn-group" role="group">
@@ -119,13 +161,13 @@ require_once __DIR__ . '/../partials/header.php';
                 <!-- Gráfico Geral -->
                 <div class="col-lg-8">
                     <div class="bg-white shadow-sm rounded-3 p-4">
-                        <h5 class="fw-bold text-secondary mb-4"><i class="bi bi-bar-chart me-2"></i> Faltas por Mês - Turma</h5>
+                        <h5 class="fw-bold text-secondary mb-4"><i class="bi bi-bar-chart me-2"></i> Faltas por Mês - <?= e($disciplinaNome) ?></h5>
                         <?php if (!empty($faltasPorMesTurma)): ?>
                             <canvas id="chartFaltasTurma" style="max-height: 300px;"></canvas>
                         <?php else: ?>
                             <div class="text-center py-5 text-muted">
                                 <i class="bi bi-graph-up fs-1 d-block mb-2"></i>
-                                <p>Nenhuma falta registrada nesta turma.</p>
+                                <p>Nenhuma falta registrada nesta disciplina.</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -137,7 +179,7 @@ require_once __DIR__ . '/../partials/header.php';
                         <h5 class="fw-bold text-secondary mb-4"><i class="bi bi-info-circle me-2"></i> Resumo</h5>
                         
                         <div class="mb-3 p-3 bg-light rounded-3 text-center">
-                            <small class="text-muted d-block fw-bold mb-1">Total de Faltas</small>
+                            <small class="text-muted d-block fw-bold mb-1">Total de Faltas (<?= e($disciplinaNome) ?>)</small>
                             <h3 class="fw-bold text-warning mb-0">
                                 <?php 
                                 $totalFaltasTurma = array_sum(array_column($faltasPorMesTurma, 'total_faltas'));
@@ -181,7 +223,7 @@ require_once __DIR__ . '/../partials/header.php';
         <!-- Visão Por Aluno -->
         <div id="alunosView" style="display: none;">
             <div class="bg-white shadow-sm rounded-3 p-4">
-                <h5 class="fw-bold text-secondary mb-4"><i class="bi bi-people me-2"></i> Faltas por Aluno</h5>
+                <h5 class="fw-bold text-secondary mb-4"><i class="bi bi-people me-2"></i> Faltas por Aluno - <?= e($disciplinaNome) ?></h5>
                 
                 <?php if (!empty($alunosComFaltas)): ?>
                     <div class="table-responsive">
@@ -212,7 +254,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-warning" onclick="mostrarGraficoAluno(<?= $aluno['id'] ?>, '<?= e($aluno['nome_completo']) ?>')">
                                             <i class="bi bi-graph-up me-1"></i> Gráfico
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -222,7 +264,7 @@ require_once __DIR__ . '/../partials/header.php';
                 <?php else: ?>
                     <div class="text-center py-5 text-muted">
                         <i class="bi bi-people fs-1 d-block mb-2"></i>
-                        <p>Nenhum aluno com faltas registradas.</p>
+                        <p>Nenhum aluno com faltas registradas nesta disciplina.</p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -264,10 +306,10 @@ require_once __DIR__ . '/../partials/header.php';
     new Chart(ctxTurma, {
         type: 'bar',
         data: {
-            labels: <?= json_encode(array_map(fn($f) => $f['mes'], $faltasPorMesTurma)) ?>,
+            labels: <?= json_encode(array_reverse(array_map(fn($f) => $f['mes'], $faltasPorMesTurma))) ?>,
             datasets: [{
                 label: 'Faltas',
-                data: <?= json_encode(array_map(fn($f) => (int)$f['total_faltas'], $faltasPorMesTurma)) ?>,
+                data: <?= json_encode(array_reverse(array_map(fn($f) => (int)$f['total_faltas'], $faltasPorMesTurma))) ?>,
                 backgroundColor: 'rgba(255, 193, 7, 0.5)',
                 borderColor: 'rgba(255, 193, 7, 1)',
                 borderWidth: 2,
@@ -292,10 +334,10 @@ require_once __DIR__ . '/../partials/header.php';
 
     // Função para mostrar gráfico do aluno
     function mostrarGraficoAluno(alunoId, nomeAluno) {
-        document.getElementById('nomeAlunoModal').textContent = nomeAluno;
+        document.getElementById('nomeAlunoModal').textContent = nomeAluno + ' - Faltas em <?= e($disciplinaNome) ?>';
         
         // Buscar dados de faltas do aluno por mês
-        fetch('app/helpers/faltas_aluno.php?aluno_id=' + alunoId + '&turma_id=' + <?= $turmaId ?>, {
+        fetch('app/helpers/faltas_aluno.php?aluno_id=' + alunoId + '&turma_id=' + <?= $turmaId ?> + '&disciplina_id=' + <?= $disciplinaId ?>, {
             method: 'GET'
         })
         .then(response => response.json())
@@ -340,10 +382,6 @@ require_once __DIR__ . '/../partials/header.php';
             });
             
             modal.show();
-        })
-        .catch(error => {
-            alert('Erro ao carregar dados do aluno');
-            console.error(error);
         });
     }
 </script>

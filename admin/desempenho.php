@@ -6,23 +6,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/../app/middleware/verificar_admin.php';
 // Conexão com o banco de dados
 require_once __DIR__ . '/../app/database/database.php';
-// Model de IA
-require_once __DIR__ . '/../app/ia/AIModel.php';
 // Model de Turmas
 require_once __DIR__ . '/../app/models/TurmaModel.php';
 
 // Inicializa models
-$aiModel = new AIModel($pdo);
 $turmaModel = new TurmaModel($pdo);
 
 // Dados básicos
 $escolaId = (int)$_SESSION['usuario']['escola_id'];
 $turmaId = isset($_GET['turma_id']) ? (int)$_GET['turma_id'] : 0;
 $periodoId = isset($_POST['periodo_id']) ? (int)$_POST['periodo_id'] : 0;
-// Define "Todos os Períodos" (0) como padrão
-if ($periodoId === 0 && !isset($_POST['periodo_id'])) {
-    $periodoId = 0;
-}
 
 // Valida se a turma foi selecionada, caso contrário volta para a seleção
 if ($turmaId <= 0) {
@@ -54,12 +47,7 @@ $stmtPeriodos = $pdo->prepare("SELECT pl.id, pl.nome, pl.data_inicio, pl.data_fi
 $stmtPeriodos->execute([':eid' => $escolaId]);
 $periodosDisponiveis = $stmtPeriodos->fetchAll(PDO::FETCH_ASSOC);
 
-// Define período padrão (apenas se não for enviado explicitamente o 0 para 'Todos')
-if (!isset($_POST['periodo_id']) && !isset($_GET['periodo_id']) && $periodoId <= 0 && !empty($periodosDisponiveis)) {
-    $periodoId = (int)$periodosDisponiveis[0]['id'];
-}
-
-// Coleta dados reais da turma selecionada sem depender da AIModel para as tabelas
+// Coleta dados reais da turma selecionada
 $periodoInfo = null;
 if ($periodoId > 0) {
     foreach ($periodosDisponiveis as $p) {
@@ -88,7 +76,7 @@ $stmtD = $pdo->prepare($sqlD);
 $stmtD->execute($paramsD);
 $dadosEstatisticos['desempenho_disciplinas'] = $stmtD->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca alunos com mais faltas na turma (CÓDIGO RESTAURADO CONFORME SOLICITADO)
+// Busca alunos com mais faltas na turma
 $sqlFaltas = "SELECT u.nome_completo, COUNT(p.id) as total_faltas
               FROM usuarios u
               INNER JOIN matriculas m ON m.aluno_id = u.id
@@ -109,34 +97,6 @@ if ($periodoInfo && !empty($periodoInfo['data_inicio']) && !empty($periodoInfo['
 $stmtFaltas->execute($paramsFaltas);
 $alunosFaltosos = $stmtFaltas->fetchAll(PDO::FETCH_ASSOC);
 $dadosEstatisticos['alunos_criticos_faltas'] = $alunosFaltosos;
-
-// Gera análise de IA se solicitado (ATIVADO)
-$analiseIA = "";
-if (isset($_POST['gerar_analise'])) {
-    // Coleta dados formatados para a IA usando o Model
-    $dadosIA = $aiModel->coletarDadosAdmin($escolaId, $turmaId, $periodoId > 0 ? $periodoId : null);
-    $analiseIA = $aiModel->analisarDesempenho($dadosIA, 'admin', $tipoPeriodo, $periodoInfo);
-
-    // Salva o relatório da IA se a chamada for bem-sucedida (não começar com ❌ ou ⚠️)
-    if (!empty($analiseIA) && !str_starts_with($analiseIA, '❌') && !str_starts_with($analiseIA, '⚠️')) {
-        require_once __DIR__ . '/../app/models/RelatorioAlunoModel.php';
-        $relatorioModel = new RelatorioAlunoModel($pdo);
-        
-        // Como é um relatório de TURMA feito pela IA para o ADMIN,
-        // vamos salvar com aluno_id = 0 para indicar que é da turma toda (ou adaptar conforme necessário)
-        // O usuário pediu: "cada relatório chama por cada usuário que chamou"
-        // Então o professor_id será o ID do Admin que chamou.
-        
-        $relatorioModel->adicionar([
-            'escola_id' => $escolaId,
-            'aluno_id' => null, // null indica relatório geral da turma
-            'professor_id' => $_SESSION['usuario']['id'],
-            'turma_id' => $turmaId,
-            'conteudo' => $analiseIA,
-            'tipo' => 'ia'
-        ]);
-    }
-}
 
 // Título da página
 $title = 'Análise de Desempenho - ' . ($turmaAtual['nome'] ?? 'Turma');
@@ -181,25 +141,8 @@ require_once __DIR__ . '/../partials/header.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <button type="submit" name="gerar_analise" class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 10px;">
-                        <i class="bi bi-cpu me-2"></i> IA - Análise
-                    </button>
                 </form>
             </div>
-
-            <!-- Exibição da Análise de IA -->
-            <?php if ($analiseIA): ?>
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm p-4" style="border-radius: 15px; border-left: 5px solid #3498db;">
-                        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-robot me-2"></i> IA - Analisando a situação... <?php if ($periodoInfo): ?> - <?= e($periodoInfo['nome']) ?><?php endif; ?></h5>
-                        <div class="ai-content text-secondary" style="line-height: 1.8;">
-                            <?php echo nl2br(e($analiseIA)); ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
 
             <!-- Dados estatísticos da turma -->
             <?php if (!empty($dadosEstatisticos['desempenho_disciplinas'])): ?>
@@ -242,12 +185,12 @@ require_once __DIR__ . '/../partials/header.php';
                                     ?>
                                     <tr>
                                         <td class="fw-bold">
-    <a href="detalhes_disciplina.php?turma_id=<?= $turmaId ?>&disciplina_id=<?= $disc['id'] ?>&periodo_id=<?= $periodoId ?>"
-       class="text-decoration-none text-primary">
-        <?= e($disc['disciplina']) ?>
-        <i class="bi bi-arrow-right-short ms-1"></i>
-    </a>
-</td>
+                                            <a href="detalhes_disciplina.php?turma_id=<?= $turmaId ?>&disciplina_id=<?= $disc['id'] ?>&periodo_id=<?= $periodoId ?>"
+                                               class="text-decoration-none text-primary">
+                                                <?= e($disc['disciplina']) ?>
+                                                <i class="bi bi-arrow-right-short ms-1"></i>
+                                            </a>
+                                        </td>
                                         <td class="text-center">
                                             <span class="badge bg-<?= $cor ?> bg-opacity-10 text-<?= $cor ?> fs-6 px-3">
                                                 <?= number_format($media, 1) ?>

@@ -1,46 +1,64 @@
 <?php
+// Ativa tipagem estrita
+declare(strict_types=1);
 
+// Middleware de autenticação do admin
 require_once __DIR__ . '/../app/middleware/verificar_admin.php';
+// Conexão com o banco de dados
 require_once __DIR__ . '/../app/database/database.php';
+// Models necessários
 require_once __DIR__ . '/../app/models/TurmaModel.php';
 require_once __DIR__ . '/../app/models/UsuarioModel.php';
-require_once __DIR__ . '/../app/models/RelatorioAlunoModel.php';
 require_once __DIR__ . '/../app/models/ProfessorTurmaDisciplinaModel.php';
 
-$escolaId = (int)$_SESSION['usuario']['escola_id'];
-$turmaId = isset($_GET['turma_id']) ? (int)$_GET['turma_id'] : 0;
-$tipoRelatorio = isset($_GET['tipo']) && in_array($_GET['tipo'], ['ia', 'professor']) ? $_GET['tipo'] : '';
-
+// Inicializa models
 $turmaModel = new TurmaModel($pdo);
 $usuarioModel = new UsuarioModel($pdo);
-$relatorioModel = new RelatorioAlunoModel($pdo);
 $ptdModel = new ProfessorTurmaDisciplinaModel($pdo);
 
+// Dados básicos
+$escolaId = (int)$_SESSION['usuario']['escola_id'];
+$turmaId = isset($_GET['turma_id']) ? (int)$_GET['turma_id'] : 0;
+$tipoVisao = isset($_GET['tipo']) ? $_GET['tipo'] : 'alunos'; // alunos ou ia_turma
+$professorFiltro = isset($_GET['professor_id']) ? (int)$_GET['professor_id'] : 0;
+$periodoFiltro = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
+
+// Busca todas as turmas da escola
 $turmas = $turmaModel->listarPorEscola($escolaId);
 
+// Dados da turma selecionada
 $alunos = [];
-$relatoriosIA = [];
 $turmaAtual = null;
+$professoresEscola = [];
+$periodosDisponiveis = [];
 
 if ($turmaId > 0) {
     $turmaAtual = $turmaModel->buscarPorId($turmaId, $escolaId);
     
-    if ($tipoRelatorio === 'professor') {
-        $alunos = $usuarioModel->listarPorTurma($turmaId);
-    } elseif ($tipoRelatorio === 'ia') {
-        $sqlIA = "SELECT r.*, p.nome_completo as professor_nome, a.nome_completo as aluno_nome 
-                  FROM relatorios_alunos r
-                  INNER JOIN usuarios p ON p.id = r.professor_id
-                  LEFT JOIN usuarios a ON a.id = r.aluno_id
-                  WHERE r.turma_id = :tid AND r.escola_id = :eid AND r.tipo = 'ia'
-                  ORDER BY r.criado_em DESC";
-        $stmtIA = $pdo->prepare($sqlIA);
-        $stmtIA->execute([':tid' => $turmaId, ':eid' => $escolaId]);
-        $relatoriosIA = $stmtIA->fetchAll(PDO::FETCH_ASSOC);
-    }
+    // Busca alunos da turma
+    $stmtAlunos = $pdo->prepare("SELECT u.id, u.nome_completo, u.email, u.cpf 
+                                FROM usuarios u 
+                                INNER JOIN matriculas m ON m.aluno_id = u.id 
+                                WHERE m.turma_id = :tid AND m.status = 'ativa' 
+                                ORDER BY u.nome_completo ASC");
+    $stmtAlunos->execute([':tid' => $turmaId]);
+    $alunos = $stmtAlunos->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Busca TODOS os professores da escola (não apenas os da turma)
+    $stmtProfessores = $pdo->prepare("SELECT u.id, u.nome_completo FROM usuarios u INNER JOIN perfis p ON p.id = u.perfil_id WHERE u.escola_id = :eid AND p.nome = 'professor'AND u.ativo = 1 ORDER BY u.nome_completo ASC");
+    $stmtProfessores->execute([':eid' => $escolaId]);
+    $professoresEscola = $stmtProfessores->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Busca períodos letivos ativos
+    $stmtPeriodos = $pdo->prepare("SELECT pl.id, pl.nome FROM periodos_letivos pl 
+                                   INNER JOIN anos_letivos al ON al.id = pl.ano_letivo_id 
+                                   WHERE al.escola_id = :eid AND al.ativo = 1 
+                                   ORDER BY pl.ordem ASC");
+    $stmtPeriodos->execute([':eid' => $escolaId]);
+    $periodosDisponiveis = $stmtPeriodos->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$title = 'Desempenho por Turma';
+$title = 'Relatórios por Turma';
 require_once __DIR__ . '/../partials/header.php';
 ?>
 
@@ -52,22 +70,16 @@ require_once __DIR__ . '/../partials/header.php';
 
         <div class="container-fluid mt-4">
             
-            <div class="page-card p-4 mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <div class="dashboard-title mb-1" style="font-size: 24px;">Desempenho Escolar</div>
-                        <div class="dashboard-subtitle mb-0">Selecione uma turma para visualizar os indicadores de desempenho.</div>
-                    </div>
-                    <a href="dashboard.php" class="btn btn-secondary btn-sm d-flex align-items-center gap-2">
-                        <i class="bi bi-arrow-left"></i> Voltar
-                    </a>
-                </div>
-
-                <div class="row">
+            <!-- Título e Seleção de Turma -->
+            <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 15px;">
+                <div class="row align-items-center">
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold text-secondary">Selecione a Turma</label>
-                        <form method="GET">
-                            <select name="turma_id" class="form-select" onchange="this.form.submit()">
+                        <h4 class="fw-bold text-secondary mb-1">Relatórios Pedagógicos</h4>
+                        <p class="text-muted mb-0">Visualize e gerencie os registros da turma.</p>
+                    </div>
+                    <div class="col-md-6 mt-3 mt-md-0">
+                        <form method="GET" class="d-flex gap-2">
+                            <select name="turma_id" class="form-select shadow-sm" style="border-radius: 10px;" onchange="this.form.submit()">
                                 <option value="">Escolher Turma...</option>
                                 <?php foreach ($turmas as $t): ?>
                                     <option value="<?= $t['id'] ?>" <?= $turmaId === (int)$t['id'] ? 'selected' : '' ?>>
@@ -81,102 +93,56 @@ require_once __DIR__ . '/../partials/header.php';
             </div>
 
             <?php if ($turmaId > 0): ?>
+                <!-- Abas de Navegação -->
                 <div class="mb-4">
-                    <div class="d-flex gap-3">
-                        <a href="?turma_id=<?= $turmaId ?>&tipo=ia" 
-                           class="btn <?= $tipoRelatorio === 'ia' ? 'btn-primary' : 'btn-outline-primary' ?> px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 12px; font-weight: 600;">
-                            <i class="bi bi-robot"></i> Indicadores da IA
-                        </a>
-                        <a href="?turma_id=<?= $turmaId ?>&tipo=professor" 
-                           class="btn <?= $tipoRelatorio === 'professor' ? 'btn-primary' : 'btn-outline-primary' ?> px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 12px; font-weight: 600;">
-                            <i class="bi bi-person-workspace"></i> Registros Pedagógicos
-                        </a>
-                    </div>
+                    <ul class="nav nav-pills bg-white p-2 shadow-sm rounded-pill d-inline-flex flex-wrap gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link rounded-pill px-4 <?= $tipoVisao === 'alunos' ? 'active' : '' ?>" 
+                               href="?turma_id=<?= $turmaId ?>&tipo=alunos">
+                                <i class="bi bi-people me-2"></i>Alunos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link rounded-pill px-4 <?= $tipoVisao === 'ia_turma' ? 'active' : '' ?>" 
+                               href="?turma_id=<?= $turmaId ?>&tipo=ia_turma">
+                                <i class="bi bi-robot me-2"></i>IA da Turma
+                            </a>
+                        </li>
+                    </ul>
                 </div>
 
-                <?php if ($tipoRelatorio === 'ia'): ?>
-                    <div class="row g-3">
-                        <?php if (!empty($relatoriosIA)): ?>
-                            <?php foreach ($relatoriosIA as $rel): ?>
-                            <div class="col-12">
-                                <div class="dashboard-card" style="border-left: 5px solid #8e44ad;">
-                                    <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
-                                        <div>
-                                            <h6 class="fw-bold text-dark mb-1">
-                                                <i class="bi bi-robot me-2 text-primary"></i>
-                                                <?= $rel['aluno_id'] ? 'Análise do Aluno: ' . e($rel['aluno_nome']) : 'Panorama Geral da Turma' ?>
-                                            </h6>
-                                            <small class="text-muted">Gerado por solicitação de: <strong><?= e($rel['professor_nome']) ?></strong></small>
-                                        </div>
-                                        <div class="badge bg-light text-dark border"><?= date('d/m/Y', strtotime($rel['criado_em'])) ?></div>
-                                    </div>
-                                    <div class="p-3 rounded-3" style="background: #fdfaff; color: #2F3740; line-height: 1.7; font-size: 14px;">
-                                        <?= nl2br(e($rel['conteudo'])) ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="col-12 text-center py-5">
-                                <div class="page-card p-5">
-                                    <i class="bi bi-robot text-muted opacity-25 d-block mb-3" style="font-size: 48px;"></i>
-                                    <h5 class="fw-bold text-secondary">Nenhuma análise da IA disponível</h5>
-                                    <p class="text-muted mb-0">Aguardando geração de indicadores automáticos para esta turma.</p>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-
-                <?php elseif ($tipoRelatorio === 'professor'): ?>
-                    <div class="row g-3">
+                <!-- VISUALIZAÇÃO: ALUNOS -->
+                <?php if ($tipoVisao === 'alunos'): ?>
+                    <div class="row g-4">
                         <?php if (!empty($alunos)): ?>
-                            <?php foreach ($alunos as $aluno): 
-                                $sqlUltimo = "SELECT r.*, u.nome_completo as professor_nome 
-                                              FROM relatorios_alunos r 
-                                              INNER JOIN usuarios u ON u.id = r.professor_id
-                                              WHERE r.aluno_id = :aid AND r.turma_id = :tid AND (r.tipo = 'professor' OR r.tipo IS NULL)
-                                              ORDER BY r.criado_em DESC LIMIT 1";
-                                $stmtUltimo = $pdo->prepare($sqlUltimo);
-                                $stmtUltimo->execute([':aid' => $aluno['id'], ':tid' => $turmaId]);
-                                $ultimoRelatorio = $stmtUltimo->fetch(PDO::FETCH_ASSOC);
-                                $primeiraLetra = mb_strtoupper(mb_substr($aluno['nome_completo'], 0, 1));
-                            ?>
+                            <?php foreach ($alunos as $aluno): ?>
                             <div class="col-md-6 col-lg-4">
-                                <div class="dashboard-card h-100 d-flex flex-column">
-                                    <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
-                                        <div class="topbar-avatar me-3" style="background: #2F3740; width: 45px; height: 45px; font-size: 1.1rem; border: none;">
-                                            <?= $primeiraLetra ?>
+                                <!-- Cartão individual do aluno (Layout padronizado com o do professor) -->
+                                <div class="card border-0 shadow-sm h-100 card-hover" style="border-radius: 15px;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <!-- Avatar representativo -->
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+                                                <i class="bi bi-person-fill fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <!-- Nome do aluno -->
+                                                <h6 class="mb-0 fw-bold text-dark"><?= e($aluno['nome_completo']) ?></h6>
+                                            </div>
                                         </div>
-                                        <div class="overflow-hidden">
-                                            <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 15px;"><?= e($aluno['nome_completo']) ?></h6>
+                                        
+                                        <!-- Informações adicionais -->
+                                        <div class="mb-4">
+                                            <div class="small text-muted mb-1">
+                                                <i class="bi bi-envelope me-2"></i> <?= e($aluno['email'] ?? 'E-mail não informado') ?>
+                                            </div>
+                                            <div class="small text-muted">
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="mb-3 flex-grow-1">
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <small class="text-secondary fw-bold" style="font-size: 11px; text-transform: uppercase;">Último Registro</small>
-                                            <?php if ($ultimoRelatorio): ?>
-                                                <small class="text-muted" style="font-size: 11px;"><?= date('d/m/Y', strtotime($ultimoRelatorio['criado_em'])) ?></small>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="p-3 rounded-3" style="background: #f8f9fa; border: 1px solid #e9ecef; font-size: 13px; color: #495057; min-height: 80px; line-height: 1.5;">
-                                            <?php if ($ultimoRelatorio): ?>
-                                                <div class="mb-2 d-flex align-items-center gap-1 text-primary fw-bold" style="font-size: 11px;">
-                                                    <i class="bi bi-person-workspace"></i> Prof. <?= e($ultimoRelatorio['professor_nome']) ?>
-                                                </div>
-                                                <?= nl2br(e(mb_strimwidth($ultimoRelatorio['conteudo'], 0, 160, "..."))) ?>
-                                            <?php else: ?>
-                                                <div class="h-100 d-flex align-items-center justify-content-center text-muted opacity-50 italic">
-                                                    Nenhum registro pedagógico.
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-auto pt-2">
-                                        <a href="historico_relatorios.php?aluno_id=<?= $aluno['id'] ?>&turma_id=<?= $turmaId ?>&tipo=professor" 
-                                           class="btn btn-outline-primary w-100 btn-sm d-flex align-items-center justify-content-center gap-2" style="min-height: 38px; border-radius: 12px; font-weight: 600;">
-                                            <i class="bi bi-clock-history"></i> Histórico de Desempenho
+                                        <!-- Botão Visualizar -->
+                                        <a href="relatorios_aluno.php?id=<?= $aluno['id'] ?>&turma_id=<?= $turmaId ?>" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm" style="border-radius: 10px;">
+                                            <i class="bi bi-eye me-1"></i> Visualizar
                                         </a>
                                     </div>
                                 </div>
@@ -184,29 +150,132 @@ require_once __DIR__ . '/../partials/header.php';
                             <?php endforeach; ?>
                         <?php else: ?>
                             <div class="col-12 text-center py-5">
-                                <div class="page-card p-5">
-                                    <i class="bi bi-people text-muted opacity-25 d-block mb-3" style="font-size: 48px;"></i>
-                                    <h5 class="fw-bold text-secondary">Nenhum aluno matriculado</h5>
-                                    <p class="text-muted mb-0">Esta turma não possui alunos ativos no sistema.</p>
-                                </div>
+                                <i class="bi bi-people text-muted opacity-25 d-block mb-3" style="font-size: 64px;"></i>
+                                <h5 class="fw-bold text-secondary">Nenhum aluno nesta turma</h5>
                             </div>
                         <?php endif; ?>
                     </div>
-                <?php endif; ?>
 
-            <?php else: ?>
-                <div class="text-center py-5 mt-4">
-                    <div class="page-card p-5 d-inline-block" style="max-width: 500px;">
-                        <div class="bg-light text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 70px; height: 70px;">
-                            <i class="bi bi-search fs-2"></i>
-                        </div>
-                        <h5 class="fw-bold text-dark">Aguardando Seleção</h5>
-                        <p class="text-muted mb-0">Escolha uma turma para gerenciar o desempenho escolar.</p>
+                <!-- VISUALIZAÇÃO: IA DA TURMA -->
+                <?php elseif ($tipoVisao === 'ia_turma'): ?>
+                    <!-- Filtros de Professor e Período para IA -->
+                    <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 12px;">
+                        <form method="GET" class="row g-3 align-items-end">
+                            <input type="hidden" name="turma_id" value="<?= $turmaId ?>">
+                            <input type="hidden" name="tipo" value="ia_turma">
+                            
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Filtrar por Professor</label>
+                                <select name="professor_id" class="form-select border-0 bg-light rounded-3" onchange="this.form.submit()">
+                                    <option value="0">Todos os Professores</option>
+                                    <?php foreach ($professoresEscola as $prof): ?>
+                                        <option value="<?= $prof['id'] ?>" <?= $professorFiltro === (int)$prof['id'] ? 'selected' : '' ?>>
+                                            <?= e($prof['nome_completo']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Filtrar por Período</label>
+                                <select name="periodo_id" class="form-select border-0 bg-light rounded-3" onchange="this.form.submit()">
+                                    <option value="0">Todos os Períodos</option>
+                                    <?php foreach ($periodosDisponiveis as $per): ?>
+                                        <option value="<?= $per['id'] ?>" <?= $periodoFiltro === (int)$per['id'] ? 'selected' : '' ?>>
+                                            <?= e($per['nome']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </form>
                     </div>
+
+                    <!-- Lista de Análises de IA -->
+                    <?php
+                        $sqlRelIA = "SELECT r.*, p.nome_completo as professor_nome 
+                                    FROM relatorios_alunos r
+                                    INNER JOIN usuarios p ON p.id = r.professor_id
+                                    WHERE r.turma_id = :tid AND r.escola_id = :eid AND r.tipo = 'ia' AND r.aluno_id IS NULL";
+                        
+                        $paramsRelIA = [':tid' => $turmaId, ':eid' => $escolaId];
+                        
+                        if ($professorFiltro > 0) {
+                            $sqlRelIA .= " AND r.professor_id = :pid";
+                            $paramsRelIA[':pid'] = $professorFiltro;
+                        }
+                        
+                        // Filtro de período via LIKE (já que o período é armazenado no conteúdo)
+                        if ($periodoFiltro > 0) {
+                            $periodoNome = null;
+                            foreach ($periodosDisponiveis as $per) {
+                                if ((int)$per['id'] === $periodoFiltro) {
+                                    $periodoNome = $per['nome'];
+                                    break;
+                                }
+                            }
+                            if ($periodoNome) {
+                                $sqlRelIA .= " AND r.conteudo LIKE :filtro_periodo";
+                                $paramsRelIA[':filtro_periodo'] = "%[" . $periodoNome . "]%";
+                            }
+                        }
+                        
+                        $sqlRelIA .= " ORDER BY r.criado_em DESC";
+                        $stmtRelIA = $pdo->prepare($sqlRelIA);
+                        $stmtRelIA->execute($paramsRelIA);
+                        $relatoriosIA = $stmtRelIA->fetchAll(PDO::FETCH_ASSOC);
+                    ?>
+
+                    <?php if (!empty($relatoriosIA)): ?>
+                        <div class="row">
+                            <?php foreach ($relatoriosIA as $rel): ?>
+                                <div class="col-12 mb-3">
+                                    <div class="card border-0 shadow-sm" style="border-radius: 15px; border-left: 5px solid #8e44ad;">
+                                        <div class="card-body p-4">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div>
+                                                    <h5 class="fw-bold text-primary mb-1">
+                                                        <i class="bi bi-robot me-2"></i>Análise de IA da Turma
+                                                    </h5>
+                                                    <p class="text-muted small mb-0">
+                                                        <i class="bi bi-person-circle me-1"></i> 
+                                                        Solicitado por: <?= e($rel['professor_nome']) ?>
+                                                    </p>
+                                                </div>
+                                                <span class="badge bg-light text-secondary border px-3 py-2" style="border-radius: 8px;">
+                                                    <i class="bi bi-calendar3 me-2"></i><?= date('d/m/Y H:i', strtotime($rel['criado_em'])) ?>
+                                                </span>
+                                            </div>
+                                            <div class="p-3 bg-light rounded-3 text-secondary" style="white-space: pre-wrap; line-height: 1.6;">
+                                                <?= e($rel['conteudo']) ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="card border-0 shadow-sm p-5 text-center" style="border-radius: 15px;">
+                            <i class="bi bi-robot text-muted opacity-25 d-block mb-3" style="font-size: 4rem;"></i>
+                            <h5 class="mt-3 text-secondary">Nenhuma análise de IA encontrada</h5>
+                            <p class="text-muted">Não há análises de inteligência artificial para a turma selecionada com os filtros aplicados.</p>
+                        </div>
+                    <?php endif; ?>
+
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="card border-0 shadow-sm p-5 text-center" style="border-radius: 20px;">
+                    <i class="bi bi-arrow-up-circle text-primary opacity-25 d-block mb-3" style="font-size: 64px;"></i>
+                    <h5 class="fw-bold text-secondary">Selecione uma Turma</h5>
+                    <p class="text-muted">Aguardando sua escolha para mostrar os alunos e relatórios.</p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
+
+<style>
+    .card-hover { transition: all 0.3s ease; }
+    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; }
+</style>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

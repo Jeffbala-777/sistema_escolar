@@ -4,10 +4,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../app/middleware/verificar_professor.php';
 require_once __DIR__ . '/../app/database/database.php';
 require_once __DIR__ . '/../app/models/ProfessorTurmaDisciplinaModel.php';
-require_once __DIR__ . '/../app/ia/AIModel.php';
-
-$aiModel = new AIModel($pdo);
-$analiseIA = '';
 
 $ptdModel = new ProfessorTurmaDisciplinaModel($pdo);
 
@@ -126,27 +122,6 @@ if ($periodoInfo && !empty($periodoInfo['data_inicio']) && !empty($periodoInfo['
 $stmtFaltas->execute($paramsFaltas);
 $alunosFaltosos = $stmtFaltas->fetchAll(PDO::FETCH_ASSOC);
 
-// Gera análise de IA se solicitado (ATIVADO PARA PROFESSOR)
-if (isset($_POST['gerar_analise'])) {
-    $dadosIA = $aiModel->coletarDadosProfessor($professorId, $escolaId, $turmaId, $periodoId > 0 ? $periodoId : null);
-    $analiseIA = $aiModel->analisarDesempenho($dadosIA, 'professor', $tipoPeriodo, $periodoInfo);
-
-    // Salva o relatório da IA se a chamada for bem-sucedida (não começar com ❌ ou ⚠️)
-    if (!empty($analiseIA) && !str_starts_with($analiseIA, '❌') && !str_starts_with($analiseIA, '⚠️')) {
-        require_once __DIR__ . '/../app/models/RelatorioAlunoModel.php';
-        $relatorioModel = new RelatorioAlunoModel($pdo);
-        
-        $relatorioModel->adicionar([
-            'escola_id' => $escolaId,
-            'aluno_id' => null, // null indica relatório geral da turma
-            'professor_id' => $_SESSION['usuario']['id'],
-            'turma_id' => $turmaId,
-            'conteudo' => $analiseIA,
-            'tipo' => 'ia'
-        ]);
-    }
-}
-
 $title = 'Desempenho: ' . $turmaAtual['nome'];
 require_once __DIR__ . '/../partials/header.php';
 ?>
@@ -185,30 +160,8 @@ require_once __DIR__ . '/../partials/header.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <button type="submit"
-                        name="gerar_analise"
-                        class="btn btn-primary fw-bold px-4 shadow-sm"
-                        style="border-radius: 10px;">
-                        <i class="bi bi-cpu me-2"></i> IA - Análise
-                    </button>
                 </form>
             </div>
-
-            <?php if ($analiseIA): ?>
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm p-4" style="border-radius: 15px; border-left: 5px solid #3498db;">
-                        <h5 class="fw-bold text-primary mb-3">
-                            <i class="bi bi-robot me-2"></i> IA - Analisando a situação...
-                            <?php if ($periodoInfo): ?> - <?= e($periodoInfo['nome']) ?><?php endif; ?>
-                        </h5>
-                        <div class="ai-content text-secondary" style="line-height: 1.8;">
-                            <?= nl2br(e($analiseIA)) ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
 
             <?php if (!empty($dadosEstatisticos)): ?>
             <div class="row">

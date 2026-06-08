@@ -12,6 +12,10 @@ require_once __DIR__ . '/../app/models/NotasModel.php';
 require_once __DIR__ . '/../app/models/PeriodoLetivoModel.php';
 // Model para dados do usuario
 require_once __DIR__ . '/../app/models/UsuarioModel.php';
+// Model de IA
+require_once __DIR__ . '/../app/ia/AIModel.php';
+// Model de Relatórios
+require_once __DIR__ . '/../app/models/RelatorioAlunoModel.php';
 
 // Pega o ID do aluno via URL
 $alunoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -24,6 +28,8 @@ $anoLetivoId = 1;
 $notasModel = new NotaModel($pdo);
 $periodoModel = new PeriodoLetivoModel($pdo);
 $usuarioModel = new UsuarioModel($pdo);
+$aiModel = new AIModel($pdo);
+$relatorioModel = new RelatorioAlunoModel($pdo);
 
 // Busca dados do aluno
 $aluno = $usuarioModel->buscarPorId($alunoId);
@@ -51,36 +57,95 @@ if (count($periodosBanco) > 0) {
 $boletim = $notasModel->buscarNotasCompletasAluno($alunoId, $anoLetivoId);
 
 // Busca informacoes da escola diretamente do banco
-$stmtEscola = $pdo->prepare("SELECT nome FROM escolas WHERE id = :id LIMIT 1");
+$stmtEscola = $pdo->prepare("SELECT nome, tipo_periodo FROM escolas WHERE id = :id LIMIT 1");
 $stmtEscola->execute([':id' => $escolaId]);
-$escolaNomeReal = $stmtEscola->fetchColumn() ?: 'Minha Escola';
+$escolaInfo = $stmtEscola->fetch(PDO::FETCH_ASSOC);
+$escolaNomeReal = $escolaInfo['nome'] ?? 'Minha Escola';
+$tipoPeriodo = $escolaInfo['tipo_periodo'] ?? 'bimestral';
 
 // Busca dados da matricula
-$stmtMatricula = $pdo->prepare("SELECT t.nome as turma_nome, t.serie FROM matriculas m 
+$stmtMatricula = $pdo->prepare("SELECT t.id as turma_id, t.nome as turma_nome, t.serie FROM matriculas m 
                                 JOIN turmas t ON t.id = m.turma_id 
                                 WHERE m.aluno_id = :aid AND m.status = 'ativa' LIMIT 1");
 $stmtMatricula->execute([':aid' => $alunoId]);
 $infoMatricula = $stmtMatricula->fetch(PDO::FETCH_ASSOC);
+$turmaId = $infoMatricula['turma_id'] ?? 0;
+
+// Filtro de período para IA
+$periodoIdIA = isset($_POST['periodo_id_ia']) ? (int)$_POST['periodo_id_ia'] : 0;
+$periodoInfoIA = null;
+if ($periodoIdIA > 0) {
+    foreach ($periodosParaExibir as $p) {
+        if ((int)$p['id'] === $periodoIdIA) {
+            $periodoInfoIA = $p;
+            break;
+        }
+    }
+}
+
+// Processa geração de IA
+$analiseIA = '';
+$mensagemSucesso = '';
+if (isset($_POST['gerar_ia_aluno'])) {
+    $dadosIA = $aiModel->coletarDadosAluno($alunoId, $escolaId, $turmaId, $periodoIdIA > 0 ? $periodoIdIA : null);
+    if (!isset($dadosIA['error'])) {
+        $analiseIA = $aiModel->analisarDesempenho($dadosIA, 'aluno', $tipoPeriodo, $periodoInfoIA);
+        if (!empty($analiseIA) && !str_starts_with($analiseIA, '❌') && !str_starts_with($analiseIA, '⚠️')) {
+            $relatorioModel->adicionar([
+                'escola_id' => $escolaId,
+                'aluno_id' => $alunoId,
+                'professor_id' => $_SESSION['usuario']['id'],
+                'turma_id' => $turmaId,
+                'conteudo' => $analiseIA,
+                'tipo' => 'ia'
+            ]);
+            $mensagemSucesso = 'Análise de IA gerada e salva com sucesso!';
+        }
+    }
+}
+
+// Filtro de tipo de relatório (ia, professor, todos)
+$tipoFiltro = isset($_GET['tipo']) && in_array($_GET['tipo'], ['ia', 'professor', 'todos']) ? $_GET['tipo'] : 'todos';
+
+// Busca relatórios (IA e Professor)
+if ($tipoFiltro === 'todos') {
+    $relatorios = $relatorioModel->listarPorAluno($alunoId, $turmaId);
+} else {
+    $sql = "SELECT r.*, u.nome_completo as professor_nome 
+            FROM relatorios_alunos r 
+            INNER JOIN usuarios u ON u.id = r.professor_id 
+            WHERE r.aluno_id = :aid AND r.turma_id = :tid AND r.tipo = :tipo
+            ORDER BY r.criado_em DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':aid' => $alunoId, ':tid' => $turmaId, ':tipo' => $tipoFiltro]);
+    $relatorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 $title = 'Visualizar Aluno - ' . $aluno['nome_completo'];
 require_once __DIR__ . '/../partials/header.php';
 ?>
 
-<div class="d-flex">
+<div class="d-flex page-wrap">
     <?php require_once __DIR__ . '/../partials/admin_sidebar.php'; ?>
 
-    <div class="main-content flex-grow-1">
+    <div class="content-area p-4">
         <?php require_once __DIR__ . '/../partials/top_panel.php'; ?>
 
-        <div class="p-4">
+        <div class="container-fluid mt-4">
             <div class="mb-4">
                 <a href="alunos.php" class="btn btn-link text-decoration-none p-0 text-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Voltar para lista de alunos
                 </a>
             </div>
 
-            <div class="bg-white shadow-sm rounded p-4 mx-auto" style="max-width: 1200px;">
-                
+            <?php if ($mensagemSucesso): ?>
+                <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                    <i class="bi bi-check-circle me-2"></i> <?= e($mensagemSucesso) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
+
+            <div class="bg-white shadow-sm rounded p-4 mb-4">
                 <!-- Cabecalho Informativo -->
                 <div class="small mb-4 text-dark border-bottom pb-2">
                     <strong>Escola:</strong> <?= e($escolaNomeReal) ?> | 
@@ -156,7 +221,72 @@ require_once __DIR__ . '/../partials/header.php';
                         </tbody>
                     </table>
                 </div>
+            </div>
 
+            <!-- Seção de Relatórios e IA -->
+            <div class="bg-white shadow-sm rounded p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 flex-wrap gap-3">
+                    <h5 class="fw-bold text-secondary mb-0">Relatórios Pedagógicos e IA</h5>
+                    
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <!-- Filtro de Tipo -->
+                        <div class="btn-group btn-group-sm me-2">
+                            <a href="?id=<?= $alunoId ?>&tipo=todos" class="btn <?= $tipoFiltro === 'todos' ? 'btn-secondary' : 'btn-outline-secondary' ?>">Todos</a>
+                            <a href="?id=<?= $alunoId ?>&tipo=ia" class="btn <?= $tipoFiltro === 'ia' ? 'btn-secondary' : 'btn-outline-secondary' ?>">IA</a>
+                            <a href="?id=<?= $alunoId ?>&tipo=professor" class="btn <?= $tipoFiltro === 'professor' ? 'btn-secondary' : 'btn-outline-secondary' ?>">Professor</a>
+                        </div>
+
+                        <!-- Geração de IA -->
+                        <form method="POST" class="d-flex gap-2 align-items-center">
+                            <select name="periodo_id_ia" class="form-select form-select-sm" style="width: 180px; border-radius: 8px;">
+                                <option value="0">Todos os Períodos</option>
+                                <?php foreach ($periodosParaExibir as $p): ?>
+                                    <option value="<?= (int)$p['id'] ?>" <?= $periodoIdIA === (int)$p['id'] ? 'selected' : '' ?>>
+                                        <?= e($p['nome']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" name="gerar_ia_aluno" class="btn btn-primary btn-sm d-flex align-items-center gap-2" style="border-radius: 8px;">
+                                <i class="bi bi-robot"></i> Gerar IA
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <?php if (!empty($relatorios)): ?>
+                        <?php foreach ($relatorios as $rel): 
+                            $isIA = isset($rel['tipo']) && $rel['tipo'] === 'ia';
+                        ?>
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm" style="border-radius: 12px; border-left: 5px solid <?= $isIA ? '#8e44ad' : '#3498db' ?>;">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="fw-bold mb-1 <?= $isIA ? 'text-purple' : 'text-primary' ?>">
+                                                    <i class="bi <?= $isIA ? 'bi-robot' : 'bi-person-workspace' ?> me-2"></i>
+                                                    <?= $isIA ? 'Análise Automática da IA' : 'Relatório do Professor' ?>
+                                                </h6>
+                                                <small class="text-muted">
+                                                    Registrado por: <strong><?= e($rel['professor_nome']) ?></strong> em <?= date('d/m/Y H:i', strtotime($rel['criado_em'])) ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="p-3 rounded-3 bg-light text-secondary" style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
+                                            <?= e($rel['conteudo']) ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="col-12 text-center py-5">
+                            <i class="bi bi-journal-x text-muted opacity-25 d-block mb-3" style="font-size: 48px;"></i>
+                            <h6 class="text-secondary">Nenhum relatório encontrado para este aluno.</h6>
+                            <p class="text-muted small">Utilize o botão acima para gerar uma análise de IA baseada no desempenho atual.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -164,6 +294,8 @@ require_once __DIR__ . '/../partials/header.php';
 
 <style>
     .table-bordered td, .table-bordered th { border: 1px solid #e0e0e0 !important; }
+    .text-purple { color: #8e44ad; }
+    .bg-light { background-color: #f8f9fa !important; }
 </style>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

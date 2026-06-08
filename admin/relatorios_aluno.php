@@ -1,39 +1,40 @@
 <?php
 require_once __DIR__ . '/../app/database/database.php';
 require_once __DIR__ . '/../app/middleware/verificar_admin.php';
+require_once __DIR__ . '/../app/models/ProfessorTurmaDisciplinaModel.php';
 
-$alunoId = isset($_GET['aluno_id']) ? (int)$_GET['aluno_id'] : 0;
-$tipoFiltro = isset($_GET['tipo']) ? $_GET['tipo'] : 'professor';
+$alunoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$turmaId = isset($_GET['turma_id']) ? (int)$_GET['turma_id'] : 0;
+
+if ($alunoId <= 0 || $turmaId <= 0) {
+    header('Location: relatorios_turma.php');
+    exit;
+}
+
+// Busca dados do aluno e turma para o cabeçalho
+$stmtInfo = $pdo->prepare("SELECT u.nome_completo as aluno_nome, t.nome as turma_nome 
+                           FROM usuarios u 
+                           INNER JOIN matriculas m ON m.aluno_id = u.id
+                           INNER JOIN turmas t ON t.id = m.turma_id
+                           WHERE u.id = :aid AND t.id = :tid");
+$stmtInfo->execute([':aid' => $alunoId, ':tid' => $turmaId]);
+$info = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+
+if (!$info) {
+    header('Location: relatorios_turma.php');
+    exit;
+}
+
+// Dados da escola
+$escolaId = (int)$_SESSION['usuario']['escola_id'];
+
+// Filtros de visualização
+$tipoFiltro = isset($_GET['tipo']) ? $_GET['tipo'] : 'professor'; // professor ou ia
 $professorFiltro = isset($_GET['professor_id']) ? (int)$_GET['professor_id'] : 0;
 $periodoFiltro = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
 
-if ($alunoId <= 0) {
-    header('Location: relatorios_turma.php');
-    exit;
-}
-
-$escolaId = (int)$_SESSION['usuario']['escola_id'];
-
-// Busca dados do aluno
-$stmtAluno = $pdo->prepare("SELECT nome_completo FROM usuarios WHERE id = :id");
-$stmtAluno->execute([':id' => $alunoId]);
-$aluno = $stmtAluno->fetch(PDO::FETCH_ASSOC);
-
-if (!$aluno) {
-    header('Location: relatorios_turma.php');
-    exit;
-}
-
-// Busca turma do aluno
-$stmtTurma = $pdo->prepare("SELECT DISTINCT t.id, t.nome FROM turmas t 
-                            INNER JOIN matriculas m ON m.turma_id = t.id 
-                            WHERE m.aluno_id = :aid LIMIT 1");
-$stmtTurma->execute([':aid' => $alunoId]);
-$turmaAluno = $stmtTurma->fetch(PDO::FETCH_ASSOC);
-$turmaId = $turmaAluno ? (int)$turmaAluno['id'] : 0;
-
 // Busca TODOS os professores da escola
-$stmtProfessores = $pdo->prepare("SELECT u.id, u.nome_completo FROM usuarios u INNER JOIN perfis p ON p.id = u.perfil_id WHERE u.escola_id = :eid AND p.nome = 'professor'AND u.ativo = 1 ORDER BY u.nome_completo ASC");
+$stmtProfessores = $pdo->prepare("SELECT u.id, u.nome_completo FROM usuarios u INNER JOIN perfis p ON p.id = u.perfil_id WHERE u.escola_id = :eid AND p.nome = 'professor' AND u.ativo = 1 ORDER BY u.nome_completo ASC");
 $stmtProfessores->execute([':eid' => $escolaId]);
 $professoresEscola = $stmtProfessores->fetchAll(PDO::FETCH_ASSOC);
 
@@ -45,22 +46,14 @@ $stmtPeriodos = $pdo->prepare("SELECT pl.id, pl.nome FROM periodos_letivos pl
 $stmtPeriodos->execute([':eid' => $escolaId]);
 $periodosDisponiveis = $stmtPeriodos->fetchAll(PDO::FETCH_ASSOC);
 
-// Constrói query de relatórios
+// Constrói a query de relatórios
 $sql = "SELECT r.*, u.nome_completo as professor_nome 
         FROM relatorios_alunos r 
         INNER JOIN usuarios u ON u.id = r.professor_id 
-        WHERE r.aluno_id = :aid AND r.escola_id = :eid";
+        WHERE r.aluno_id = :aid AND r.turma_id = :tid AND r.tipo = :tipo";
 
-$params = [':aid' => $alunoId, ':eid' => $escolaId];
+$params = [':aid' => $alunoId, ':tid' => $turmaId, ':tipo' => $tipoFiltro];
 
-// Filtro por tipo
-if ($tipoFiltro === 'ia') {
-    $sql .= " AND r.tipo = 'ia'";
-} else {
-    $sql .= " AND (r.tipo = 'professor' OR r.tipo IS NULL)";
-}
-
-// Filtro por professor
 if ($professorFiltro > 0) {
     $sql .= " AND r.professor_id = :pid";
     $params[':pid'] = $professorFiltro;
@@ -82,12 +75,11 @@ if ($tipoFiltro === 'ia' && $periodoFiltro > 0) {
 }
 
 $sql .= " ORDER BY r.criado_em DESC";
+$stmtRel = $pdo->prepare($sql);
+$stmtRel->execute($params);
+$relatorios = $stmtRel->fetchAll(PDO::FETCH_ASSOC);
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$relatorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$title = 'Histórico de Relatórios';
+$title = 'Relatórios do Aluno';
 require_once __DIR__ . '/../partials/header.php';
 ?>
 
@@ -102,14 +94,12 @@ require_once __DIR__ . '/../partials/header.php';
             <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 15px;">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div class="d-flex align-items-center">
-                        <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
-                            <i class="fas fa-history text-info fs-4"></i>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-file-alt text-primary fs-4"></i>
                         </div>
                         <div>
-                            <h4 class="mb-1 fw-bold">Histórico: <?= htmlspecialchars($aluno['nome_completo']) ?></h4>
-                            <?php if ($turmaAluno): ?>
-                                <p class="text-muted mb-0"><i class="fas fa-users me-1"></i> Turma: <?= htmlspecialchars($turmaAluno['nome']) ?></p>
-                            <?php endif; ?>
+                            <h4 class="mb-1 fw-bold">Relatórios: <?= htmlspecialchars($info['aluno_nome']) ?></h4>
+                            <p class="text-muted mb-0"><i class="fas fa-users me-1"></i> Turma: <?= htmlspecialchars($info['turma_nome']) ?></p>
                         </div>
                     </div>
                     <a href="relatorios_turma.php?turma_id=<?= $turmaId ?>" class="btn btn-outline-secondary rounded-pill px-4">
@@ -123,13 +113,13 @@ require_once __DIR__ . '/../partials/header.php';
                 <ul class="nav nav-pills bg-white p-2 shadow-sm rounded-pill d-inline-flex flex-wrap gap-2">
                     <li class="nav-item">
                         <a class="nav-link rounded-pill px-4 <?= $tipoFiltro === 'professor' ? 'active' : '' ?>" 
-                           href="?aluno_id=<?= $alunoId ?>&tipo=professor">
+                           href="?id=<?= $alunoId ?>&turma_id=<?= $turmaId ?>&tipo=professor">
                             <i class="bi bi-person-workspace me-2"></i>Do Professor
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link rounded-pill px-4 <?= $tipoFiltro === 'ia' ? 'active' : '' ?>" 
-                           href="?aluno_id=<?= $alunoId ?>&tipo=ia">
+                           href="?id=<?= $alunoId ?>&turma_id=<?= $turmaId ?>&tipo=ia">
                             <i class="bi bi-robot me-2"></i>Análise IA
                         </a>
                     </li>
@@ -139,7 +129,8 @@ require_once __DIR__ . '/../partials/header.php';
             <!-- Filtros -->
             <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 12px;">
                 <form method="GET" class="row g-3 align-items-end">
-                    <input type="hidden" name="aluno_id" value="<?= $alunoId ?>">
+                    <input type="hidden" name="id" value="<?= $alunoId ?>">
+                    <input type="hidden" name="turma_id" value="<?= $turmaId ?>">
                     <input type="hidden" name="tipo" value="<?= $tipoFiltro ?>">
                     
                     <div class="col-md-<?= $tipoFiltro === 'ia' ? '6' : '12' ?>">
