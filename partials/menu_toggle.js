@@ -33,7 +33,9 @@ window.addEventListener("DOMContentLoaded", () => {
         document.body.style.overflow = "";
     }
 
-    menuButton.addEventListener("click", () => {
+    menuButton.addEventListener("click", (e) => {
+
+        e.stopPropagation();
 
         if (sidebar.classList.contains("active")) {
             closeMenu();
@@ -44,10 +46,28 @@ window.addEventListener("DOMContentLoaded", () => {
 
     overlay.addEventListener("click", closeMenu);
 
+    document.addEventListener("click", (e) => {
+
+        if (window.innerWidth > 991) {
+            return;
+        }
+
+        const clicouNoMenu = sidebar.contains(e.target);
+        const clicouNoBotao = menuButton.contains(e.target);
+
+        if (!clicouNoMenu && !clicouNoBotao) {
+            closeMenu();
+        }
+    });
+
     window.addEventListener("resize", () => {
 
         if (window.innerWidth > 991) {
-            closeMenu();
+
+            sidebar.classList.remove("active");
+            overlay.classList.remove("active");
+
+            document.body.style.overflow = "";
         }
     });
 });

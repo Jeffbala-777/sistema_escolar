@@ -62,6 +62,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', function (e) {
 
+        if (window.innerWidth > 991) {
+            return;
+        }
+
         const clicouNoMenu = sidebar.contains(e.target);
 
         const clicouNoBotao = menuToggle.contains(e.target);
@@ -76,7 +80,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (window.innerWidth > 991) {
 
-            fecharMenu();
+            sidebar.classList.remove('active');
+
+            overlay.classList.remove('active');
+
+            document.body.style.overflow = '';
         }
     });
 

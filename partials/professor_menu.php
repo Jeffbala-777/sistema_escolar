@@ -45,11 +45,20 @@ function professorMenuAtivo($pagina)
     </a>
 
     <a
-        class="<?= in_array($paginaAtual, ['selecionar_turma.php', 'desempenho.php', 'relatorios_turma.php', 'relatorios_aluno.php', 'historico_relatorios.php']) ? 'active-menu' : '' ?>"
+        class="<?= in_array($paginaAtual, ['desempenho.php']) ? 'active-menu' : '' ?>"
         href="<?= base_url('professor/selecionar_turma.php') ?>">
 
         <i class="bi bi-graph-up-arrow"></i>
         Desempenho
+
+    </a>
+
+    <a
+        class="<?= in_array($paginaAtual, ['relatorios_turma.php', 'relatorios_aluno.php', 'historico_relatorios.php']) ? 'active-menu' : '' ?>"
+        href="<?= base_url('professor/relatorios_turma.php') ?>">
+
+        <i class="bi bi-clipboard-check"></i>
+        Relatórios
 
     </a>
 

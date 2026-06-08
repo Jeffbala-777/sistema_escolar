@@ -475,11 +475,14 @@ img{
     visibility:hidden;
 
     transition:.25s ease;
+
+    pointer-events:none;
 }
 
 .sidebar-overlay.active{
     opacity:1;
     visibility:visible;
+    pointer-events:auto;
 }
 
 /* =========================
@@ -518,19 +521,24 @@ img{
 }
 
 /* =========================
-   RESPONSIVE
+   RESPONSIVE — TABLET / MOBILE (≤ 991px)
 ========================= */
 
 @media(max-width:991px){
+
+    /* No mobile o sidebar começa fora da tela (esquerda) */
     .sidebar{
         top:82px;
         left:-280px;
         width:260px;
         height:calc(100vh - 82px);
     }
+
+    /* Quando o JS adiciona .active, o sidebar desliza para dentro */
     .sidebar.active{
         left:0;
     }
+
     .topbar{
         position:fixed!important;
         top:0!important;
@@ -539,6 +547,7 @@ img{
         padding:0 20px;
     }
 
+    /* Conteúdo ocupa a largura toda pois o sidebar está oculto */
     .content-area{
         margin-left:0;
         width:100%;
@@ -549,23 +558,37 @@ img{
     }
 
     .main-content{
-
         margin-left:0;
-
         width:100%;
-
         padding:
             112px
             18px
             18px;
     }
 
+    /* Exibe o botão hamburger apenas em telas pequenas */
     .menu-toggle{
         display:flex !important;
     }
 
     .topbar-logo{
         font-size:22px;
+    }
+}
+
+/* Garante que em desktop o sidebar fique sempre visível e o overlay oculto */
+@media(min-width:992px){
+
+    .sidebar{
+        left:0 !important;
+    }
+
+    .sidebar-overlay{
+        display:none !important;
+    }
+
+    .menu-toggle{
+        display:none !important;
     }
 }
 
