@@ -106,14 +106,12 @@ if ($turmaId > 0 && $turmaAtual) {
             $analiseIA = $aiModel->analisarDesempenho($dadosIA, 'professor', $tipoPeriodo, $periodoInfoGerar);
 
             if (!empty($analiseIA) && !str_starts_with($analiseIA, '❌')) {
-                $prefixo = $periodoIdGerar > 0 ? "[" . $periodoInfoGerar['nome'] . "] " : "[Geral] ";
-
                 $salvou = $relatorioModel->adicionar([
                     'escola_id' => $escolaId,
                     'aluno_id' => null,
                     'professor_id' => $professorId,
                     'turma_id' => $turmaId,
-                    'conteudo' => $prefixo . $analiseIA,
+                    'conteudo' => $analiseIA,
                     'tipo' => 'ia'
                 ]);
 
@@ -300,13 +298,15 @@ require_once __DIR__ . '/../partials/header.php';
                                           FROM relatorios_alunos r
                                           WHERE r.aluno_id = :aid
                                             AND r.turma_id = :tid
+                                            AND r.professor_id = :pid
                                             AND (r.tipo = 'professor' OR r.tipo IS NULL)
                                           ORDER BY r.criado_em DESC
                                           LIMIT 1";
                             $stmtUltimo = $pdo->prepare($sqlUltimo);
                             $stmtUltimo->execute([
                                 ':aid' => $aluno['id'],
-                                ':tid' => $turmaId
+                                ':tid' => $turmaId,
+                                ':pid' => $professorId
                             ]);
                             $ultimo = $stmtUltimo->fetch(PDO::FETCH_ASSOC);
                         ?>

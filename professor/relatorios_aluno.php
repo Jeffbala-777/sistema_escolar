@@ -69,9 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['salvar_edicao'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adicionar_relatorio'])) {
     $conteudo = trim($_POST['conteudo'] ?? '');
     if (!empty($conteudo)) {
+        $cabecalho = "Matéria: {$disciplinaNome}\n\n";
         $relatorioModel->adicionar([
             'escola_id' => $escolaId, 'aluno_id' => $alunoId, 'professor_id' => $professorId,
-            'turma_id' => $turmaId, 'conteudo' => $conteudo, 'tipo' => 'professor'
+            'turma_id' => $turmaId, 'conteudo' => $cabecalho . $conteudo, 'tipo' => 'professor'
         ]);
         header("Location: relatorios_aluno.php?aluno_id=$alunoId&turma_id=$turmaId&disciplina_id=$disciplinaId&aba=manual&modo=visualizar&sucesso=1");
         exit;
@@ -97,9 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gerar_ia_aluno'])) {
     if (!isset($dadosIA['error'])) {
         $analiseIA = $aiModel->analisarDesempenho($dadosIA, 'aluno', $tipoPeriodo, $periodoInfoIA);
         if (!empty($analiseIA) && !str_starts_with($analiseIA, '❌') && !str_starts_with($analiseIA, '⚠️')) {
+            $cabecalhoIA = "Matéria: {$disciplinaNome}\n\n";
             $relatorioModel->adicionar([
                 'escola_id' => $escolaId, 'aluno_id' => $alunoId, 'professor_id' => $professorId,
-                'turma_id' => $turmaId, 'conteudo' => $analiseIA, 'tipo' => 'ia'
+                'turma_id' => $turmaId, 'conteudo' => $cabecalhoIA . $analiseIA, 'tipo' => 'ia'
             ]);
             $sucessoIA = true;
         } else { $mensagemIA = $analiseIA; }
@@ -122,14 +124,14 @@ $stmtT = $pdo->prepare($sqlTotal);
 $stmtT->execute([':aid' => $alunoId, ':eid' => $escolaId, ':ptd' => $ptdId]);
 $totalFaltas = $stmtT->fetchColumn();
 
-$sqlManual = "SELECT r.*, u.nome_completo as professor_nome FROM relatorios_alunos r INNER JOIN usuarios u ON u.id = r.professor_id WHERE r.aluno_id = :aid AND r.turma_id = :tid AND (r.tipo = 'professor' OR r.tipo IS NULL) ORDER BY r.criado_em DESC";
+$sqlManual = "SELECT r.*, u.nome_completo as professor_nome FROM relatorios_alunos r INNER JOIN usuarios u ON u.id = r.professor_id WHERE r.aluno_id = :aid AND r.turma_id = :tid AND r.professor_id = :pid AND (r.tipo = 'professor' OR r.tipo IS NULL) ORDER BY r.criado_em DESC";
 $stmtM = $pdo->prepare($sqlManual);
-$stmtM->execute([':aid' => $alunoId, ':tid' => $turmaId]);
+$stmtM->execute([':aid' => $alunoId, ':tid' => $turmaId, ':pid' => $professorId]);
 $relatoriosManual = $stmtM->fetchAll(PDO::FETCH_ASSOC);
 
-$sqlIA = "SELECT r.*, u.nome_completo as professor_nome FROM relatorios_alunos r INNER JOIN usuarios u ON u.id = r.professor_id WHERE r.aluno_id = :aid AND r.turma_id = :tid AND r.tipo = 'ia' ORDER BY r.criado_em DESC";
+$sqlIA = "SELECT r.*, u.nome_completo as professor_nome FROM relatorios_alunos r INNER JOIN usuarios u ON u.id = r.professor_id WHERE r.aluno_id = :aid AND r.turma_id = :tid AND r.professor_id = :pid AND r.tipo = 'ia' ORDER BY r.criado_em DESC";
 $stmtIA = $pdo->prepare($sqlIA);
-$stmtIA->execute([':aid' => $alunoId, ':tid' => $turmaId]);
+$stmtIA->execute([':aid' => $alunoId, ':tid' => $turmaId, ':pid' => $professorId]);
 $relatoriosIA = $stmtIA->fetchAll(PDO::FETCH_ASSOC);
 
 $title = 'Relatórios de ' . $aluno['nome_completo'];

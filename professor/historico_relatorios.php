@@ -42,7 +42,7 @@ if (isset($_GET['excluir_id'])) {
     exit;
 }
 
-$relatorios = $relatorioModel->listarPorAluno($alunoId, $turmaId);
+$relatorios = $relatorioModel->listarPorAluno($alunoId, $turmaId, null, (int)$professorId);
 
 $title = 'Histórico de Relatórios - ' . $aluno['nome_completo'];
 require_once __DIR__ . '/../partials/header.php';

@@ -62,28 +62,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', function (e) {
 
-        if (window.innerWidth > 991) {
-            return;
-        }
-
-        const clicouNoMenu = sidebar.contains(e.target);
-
-        const clicouNoBotao = menuToggle.contains(e.target);
-
-        if (!clicouNoMenu && !clicouNoBotao) {
-
-            fecharMenu();
+        // No mobile (≤991px), fecha o menu ao clicar fora
+        if (window.innerWidth <= 991) {
+            const clicouNoMenu = sidebar.contains(e.target);
+            const clicouNoBotao = menuToggle.contains(e.target);
+            if (!clicouNoMenu && !clicouNoBotao) {
+                fecharMenu();
+            }
         }
     });
 
     window.addEventListener('resize', function () {
 
+        // No mobile (≤991px), fecha o menu ao redimensionar para desktop
         if (window.innerWidth > 991) {
-
             sidebar.classList.remove('active');
-
             overlay.classList.remove('active');
-
             document.body.style.overflow = '';
         }
     });

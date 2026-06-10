@@ -313,7 +313,7 @@ img{
 
     transition:.2s ease;
 
-    display:none;
+    display:flex;
     align-items:center;
     justify-content:center;
 
@@ -576,18 +576,14 @@ img{
     }
 }
 
-/* Garante que em desktop o sidebar fique sempre visível e o overlay oculto */
+/* Desktop: sidebar sempre visível e responsivo */
 @media(min-width:992px){
 
     .sidebar{
-        left:0 !important;
+        left:0;
     }
 
     .sidebar-overlay{
-        display:none !important;
-    }
-
-    .menu-toggle{
         display:none !important;
     }
 }
