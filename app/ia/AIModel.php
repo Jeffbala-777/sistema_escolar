@@ -73,85 +73,69 @@ class AIModel extends BaseModel
         $mediaAprovacao = self::MEDIA_APROVACAO;
 
         if ($perfil === 'professor') {
-            return "Você é um analista pedagógico institucional.
+            return "Analise a turma utilizando EXCLUSIVAMENTE os dados do JSON.
 
-Analise toda a turma utilizando exclusivamente os dados fornecidos no JSON.
+Estrutura obrigatória:
 
-Use os dados exatamente como estão. Não invente nomes, notas, faltas ou períodos.
+📊 PERÍODO: {$periodoTxt}
 
-REGRAS DE CLASSIFICAÇÃO DA TURMA:
-- Média geral abaixo de 15 = Crítica.
-- Média geral de 15 a 19,9 = Atenção.
-- Média geral de 20 a 24,9 = Regular.
-- Média geral de 25 a 29,9 = Boa.
-- Média geral de 30 a 34,9 = Muito Boa.
-- Média geral de 35 a 40 = Excelente.
+🏫 TURMA: [Nome] | 📚 DISCIPLINA: [Disciplina]
 
-Não classifique uma turma com média geral 17 como Boa.
-Não classifique uma turma com média geral abaixo de 20 como Boa.
+📈 SITUAÇÃO GERAL: Classifique conforme a média geral (máximo 2 linhas).
+- Abaixo de 15 = Crítica
+- 15 a 19,9 = Atenção
+- 20 a 24,9 = Regular
+- 25 a 29,9 = Boa
+- 30+ = Muito Boa
 
-A resposta deve seguir EXATAMENTE esta estrutura:
+📋 INDICADORES:
+Média Geral: X | Total de Faltas: X
 
-📊 PERÍODO
-Informar o período analisado e a turma.
-PERÍODO SELECIONADO: {$periodoTxt}
+CRITÉRIOS PARA CLASSIFICAÇÃO DE ALUNOS:
 
-🏫 TURMA
-Nome da turma.
+Se for 1º Trimestre:
+- CRISE: Nota < 18
+- REVISÃO: Nota entre 18 e 19,9
+- BOM: Nota >= 20
 
-📈 SITUAÇÃO GERAL
-Classificar a turma conforme a média geral e os dados de faltas.
+Se for 2º Trimestre ou posterior:
+- CRISE: Soma de notas < 36 (muito abaixo da média)
+- REVISÃO: Soma de notas entre 36 e 39,9
+- BOM: Soma de notas >= 40
 
-📋 INDICADORES DA TURMA
-Média Geral: X
-Total de Faltas: X
+🚨 ALUNOS EM CRISE:
+Apenas os nomes separados por vírgula. Destaque se estão MUITO ABAIXO da média da turma. Se nenhum, escreva: Nenhum.
 
-📉 COMPARAÇÃO COM PERÍODOS ANTERIORES
-Informar:
-- evolução da média
-- aumento ou redução das faltas
-- tendência observada
+💳 ALUNOS PARA REVISÃO:
+Apenas os nomes separados por vírgula. Se nenhum, escreva: Nenhum.
 
-🎯 PRINCIPAIS PONTOS POSITIVOS
-Máximo de 3 itens.
+💵 ALUNOS COM BOM DESEMPENHO:
+Apenas os nomes separados por vírgula. Se nenhum, escreva: Nenhum.
 
-⚠️ PRINCIPAIS PONTOS DE ATENÇÃO
-Máximo de 3 itens.
+⚠️ ALUNOS COM FALTAS ALTAS (3 ou mais):
+Apenas os nomes separados por vírgula. Se nenhum, escreva: Nenhum.
 
-🚨 ALUNOS QUE NECESSITAM ATENÇÃO
-Liste TODOS os alunos que atendam a pelo menos um destes critérios:
-- média abaixo de {$mediaAprovacao}
-- 3 ou mais faltas
-- sem nota
-- queda significativa de desempenho entre períodos
+💡 PONTOS POSITIVOS:
+Máximo 2 itens com 1-2 linhas cada.
 
-Para cada aluno, mostre:
-• Nome
-Nota: X
-Faltas: X
-Motivo: explique objetivamente.
+⚠️ PONTOS DE ATENÇÃO:
+Máximo 2 itens com 1-2 linhas cada.
 
-Não omita alunos críticos.
-Se houver 5, liste 5.
-Se houver 20, liste 20.
-Não limite a quantidade.
+🎯 SUGESTÕES PEDAGÓGICAS:
+Máximo 3 ações práticas com 1-2 linhas cada (ex: reforço, atividades, acompanhamento).
 
-Se não houver alunos críticos:
-(Não foram identificados alunos em situação de risco)
-
-💡 RECOMENDAÇÃO PEDAGÓGICA
-Máximo de 3 frases.
-
-📝 CONCLUSÃO
-Resumo final em uma frase.
+📝 RESUMO:
+Máximo 2 frases explicando a situação geral da turma.
 
 REGRAS:
 - Não inventar dados.
-- Não criar estatísticas fictícias.
-- Não listar todos os alunos, apenas os críticos.
-- Linguagem profissional e objetiva.
-- Máximo de 25 linhas.
-- NOTA MÁXIMA DO SISTEMA: {$notaMaxima} pontos.
+- Máximo 20 linhas.
+- Linguagem clara, profissional e acessível.
+- NOTA MÁXIMA: {$notaMaxima} pontos.
+- Dar corpo ao texto: evitar linhas muito curtas, usar descrições breves mas completas.
+- Manter foco: alunos em crise (nomes) rápidos, sugestões práticas e detalhadas.
+- IMPORTANTE: Destacar alunos MUITO ABAIXO da média da turma com aviso claro.
+- IMPORTANTE: No 2º trimestre e posteriores, usar SOMA de notas para classificação (36 pontos = média).
 
 DADOS EM JSON:
 " . json_encode($dadosCompactos, JSON_UNESCAPED_UNICODE);
@@ -176,14 +160,14 @@ MÉDIA DE APROVAÇÃO: {$mediaAprovacao} pontos
 
 ESTRUTURA OBRIGATÓRIA:
 
+DISCIPLINA:
+Exiba apenas o valor do campo disciplina no início da análise.
+
 PERÍODO:
 Utilize o período selecionado pelo sistema: {$periodoTxt}
 
 ALUNO:
 Exiba o valor do campo aluno.
-
-DISCIPLINA:
-Exiba o valor do campo disciplina.
 
 SITUAÇÃO GERAL:
 Classifique utilizando a escala 0-{$notaMaxima}:
@@ -387,122 +371,120 @@ DADOS EM JSON:
     }
 
     public function coletarDadosProfessor(int $professorId, int $escolaId, ?int $turmaId = null, ?int $periodoId = null, ?int $disciplinaId = null): array
-{
-    $sql = "SELECT ptd.id, ptd.turma_id, ptd.disciplina_id, t.nome AS turma, d.nome AS disciplina
-            FROM professor_turma_disciplina ptd
-            INNER JOIN turmas t ON t.id = ptd.turma_id
-            INNER JOIN disciplinas d ON d.id = ptd.disciplina_id
-            WHERE ptd.professor_id = :prof_id
-              AND ptd.escola_id = :escola_id
-              AND ptd.ativo = 1
-              AND ptd.turma_id = :turma_id
-              AND ptd.disciplina_id = :did
-            LIMIT 1";
+    {
+        $sql = "SELECT ptd.id, ptd.turma_id, ptd.disciplina_id, t.nome AS turma, d.nome AS disciplina
+                FROM professor_turma_disciplina ptd
+                INNER JOIN turmas t ON t.id = ptd.turma_id
+                INNER JOIN disciplinas d ON d.id = ptd.disciplina_id
+                WHERE ptd.escola_id = :escola_id
+                  AND ptd.ativo = 1
+                  AND ptd.turma_id = :turma_id
+                  AND ptd.disciplina_id = :did
+                LIMIT 1";
 
-    $t = $this->fetch($sql, [
-        ':prof_id' => $professorId,
-        ':escola_id' => $escolaId,
-        ':turma_id' => $turmaId,
-        ':did' => $disciplinaId
-    ]);
+        $t = $this->fetch($sql, [
+            ':escola_id' => $escolaId,
+            ':turma_id' => $turmaId,
+            ':did' => $disciplinaId
+        ]);
 
-    if (!$t) {
-        return [];
-    }
-
-    $params = [
-        ':tid' => $turmaId,
-        ':did_geral' => $disciplinaId
-    ];
-
-    $sqlMediaPeriodo = 'NULL';
-    if ($periodoId) {
-        $sqlMediaPeriodo = "(SELECT n.nota
-                             FROM notas n
-                             WHERE n.aluno_id = u.id
-                               AND n.disciplina_id = :did_periodo
-                               AND n.periodo_id = :pid
-                             LIMIT 1)";
-        $params[':did_periodo'] = $disciplinaId;
-        $params[':pid'] = $periodoId;
-    }
-
-    $sqlFaltasPeriodo = '';
-    if ($periodoId) {
-        $periodo = $this->fetch(
-            "SELECT data_inicio, data_fim FROM periodos_letivos WHERE id = :pid",
-            [':pid' => $periodoId]
-        );
-
-        if ($periodo && $periodo['data_inicio'] && $periodo['data_fim']) {
-            $sqlFaltasPeriodo = " AND a.data_aula BETWEEN :d1 AND :d2";
-            $params[':d1'] = $periodo['data_inicio'];
-            $params[':d2'] = $periodo['data_fim'];
-        }
-    }
-
-    $sqlAlunos = "SELECT u.nome_completo,
-                    $sqlMediaPeriodo AS media,
-                    (SELECT AVG(n2.nota)
-                     FROM notas n2
-                     WHERE n2.aluno_id = u.id
-                       AND n2.disciplina_id = :did_geral) AS media_geral,
-                    (SELECT COUNT(p.id)
-                     FROM presencas p
-                     INNER JOIN aulas a ON a.id = p.aula_id
-                     WHERE p.aluno_id = u.id
-                       AND a.professor_turma_disciplina_id = :ptd
-                       AND p.status = 'falta'
-                       $sqlFaltasPeriodo) AS faltas
-                  FROM usuarios u
-                  INNER JOIN matriculas m ON m.aluno_id = u.id
-                  WHERE m.turma_id = :tid
-                    AND u.ativo = 1";
-
-    $params[':ptd'] = $t['id'];
-
-    $alunos = $this->fetchAll($sqlAlunos, $params);
-
-    $mediaTurma = 0;
-    $cont = 0;
-    $detalhes = [];
-
-    foreach ($alunos as $a) {
-        $valorMedia = $periodoId ? $a['media'] : $a['media_geral'];
-
-        if ($valorMedia !== null && $valorMedia !== 'Sem nota') {
-            if (is_numeric($valorMedia) && (float)$valorMedia > self::NOTA_MAXIMA) {
-                $valorMedia = self::NOTA_MAXIMA;
-            }
-            $mediaTurma += (float)$valorMedia;
-            $cont++;
+        if (!$t) {
+            return [];
         }
 
-        $detalhes[] = [
-            'nome' => $a['nome_completo'],
-            'media' => $a['media'] ?? 'Sem nota',
-            'media_geral' => $a['media_geral'] ?? 0,
-            'faltas' => (int)$a['faltas']
+        $params = [
+            ':tid' => $turmaId,
+            ':did_geral' => $disciplinaId
         ];
+
+        $sqlMediaPeriodo = 'NULL';
+        if ($periodoId) {
+            $sqlMediaPeriodo = "(SELECT n.nota
+                                 FROM notas n
+                                 WHERE n.aluno_id = u.id
+                                   AND n.disciplina_id = :did_periodo
+                                   AND n.periodo_id = :pid
+                                 LIMIT 1)";
+            $params[':did_periodo'] = $disciplinaId;
+            $params[':pid'] = $periodoId;
+        }
+
+        $sqlFaltasPeriodo = '';
+        if ($periodoId) {
+            $periodo = $this->fetch(
+                "SELECT data_inicio, data_fim FROM periodos_letivos WHERE id = :pid",
+                [':pid' => $periodoId]
+            );
+
+            if ($periodo && $periodo['data_inicio'] && $periodo['data_fim']) {
+                $sqlFaltasPeriodo = " AND a.data_aula BETWEEN :d1 AND :d2";
+                $params[':d1'] = $periodo['data_inicio'];
+                $params[':d2'] = $periodo['data_fim'];
+            }
+        }
+
+        $sqlAlunos = "SELECT u.nome_completo,
+                        $sqlMediaPeriodo AS media,
+                        (SELECT AVG(n2.nota)
+                         FROM notas n2
+                         WHERE n2.aluno_id = u.id
+                           AND n2.disciplina_id = :did_geral) AS media_geral,
+                        (SELECT COUNT(p.id)
+                         FROM presencas p
+                         INNER JOIN aulas a ON a.id = p.aula_id
+                         WHERE p.aluno_id = u.id
+                           AND a.professor_turma_disciplina_id = :ptd
+                           AND p.status = 'falta'
+                           $sqlFaltasPeriodo) AS faltas
+                      FROM usuarios u
+                      INNER JOIN matriculas m ON m.aluno_id = u.id
+                      WHERE m.turma_id = :tid
+                        AND u.ativo = 1";
+
+        $params[':ptd'] = $t['id'];
+
+        $alunos = $this->fetchAll($sqlAlunos, $params);
+
+        $mediaTurma = 0;
+        $cont = 0;
+        $detalhes = [];
+
+        foreach ($alunos as $a) {
+            $valorMedia = $periodoId ? $a['media'] : $a['media_geral'];
+
+            if ($valorMedia !== null && $valorMedia !== 'Sem nota') {
+                if (is_numeric($valorMedia) && (float)$valorMedia > self::NOTA_MAXIMA) {
+                    $valorMedia = self::NOTA_MAXIMA;
+                }
+                $mediaTurma += (float)$valorMedia;
+                $cont++;
+            }
+
+            $detalhes[] = [
+                'nome' => $a['nome_completo'],
+                'media' => $a['media'] ?? 'Sem nota',
+                'media_geral' => $a['media_geral'] ?? 0,
+                'faltas' => (int)$a['faltas']
+            ];
+        }
+
+        $alunosCriticos = array_values(array_filter($detalhes, function ($a) {
+            $media = $a['media'];
+            $faltas = (int)$a['faltas'];
+            $mediaGeral = $a['media_geral'];
+
+            return (is_numeric($media) && (float)$media < self::MEDIA_APROVACAO)
+                || (is_numeric($mediaGeral) && (float)$mediaGeral < self::MEDIA_APROVACAO)
+                || $faltas >= 3
+                || !is_numeric($media)
+                || $media === 'Sem nota';
+        }));
+
+        return [[
+            'turma' => $t['turma'],
+            'disciplina' => $t['disciplina'],
+            'media_geral' => $cont > 0 ? round($mediaTurma / $cont, 1) : 0,
+            'alunos_criticos' => $alunosCriticos
+        ]];
     }
-
-    $alunosCriticos = array_values(array_filter($detalhes, function ($a) {
-        $media = $a['media'];
-        $faltas = (int)$a['faltas'];
-        $mediaGeral = $a['media_geral'];
-
-        return (is_numeric($media) && (float)$media < self::MEDIA_APROVACAO)
-            || (is_numeric($mediaGeral) && (float)$mediaGeral < self::MEDIA_APROVACAO)
-            || $faltas >= 3
-            || !is_numeric($media)
-            || $media === 'Sem nota';
-    }));
-
-    return [[
-        'turma' => $t['turma'],
-        'disciplina' => $t['disciplina'],
-        'media_geral' => $cont > 0 ? round($mediaTurma / $cont, 1) : 0,
-        'alunos_criticos' => $alunosCriticos
-    ]];
-}
 }

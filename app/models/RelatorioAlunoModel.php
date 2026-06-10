@@ -13,18 +13,13 @@ class RelatorioAlunoModel extends BaseModel
     private function checkAndFixSchema(): void
     {
         try {
-            // Verifica se aluno_id permite NULL
             $stmt = $this->pdo->query("SHOW COLUMNS FROM `relatorios_alunos` LIKE 'aluno_id'");
             $column = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($column && $column['Null'] === 'NO') {
-                // Se for NOT NULL, tenta alterar para permitir NULL
-                // Primeiro removemos a FK temporariamente para garantir a alteração se necessário, 
-                // mas geralmente o MySQL permite mudar de NOT NULL para NULL sem dropar a FK.
-                $this->pdo->exec("ALTER TABLE `relatorios_alunos` MODIFY `aluno_id` int(10) UNSIGNED NULL");
+                $this->pdo->exec("ALTER TABLE `relatorios_alunos` MODIFY `aluno_id` INT(10) UNSIGNED NULL");
             }
         } catch (Exception $e) {
-            // Ignora erros de esquema para não travar a aplicação
         }
     }
 
@@ -42,17 +37,22 @@ class RelatorioAlunoModel extends BaseModel
         return $hasColumn;
     }
 
-    public function listarPorAluno(int $alunoId, int $turmaId, ?string $tipo = null): array
+    public function listarPorAluno(int $alunoId, int $turmaId, ?string $tipo = null, ?int $professorId = null): array
     {
-        $sql = "SELECT r.*, u.nome_completo as professor_nome 
+        $sql = "SELECT r.*, u.nome_completo as professor_nome
                 FROM relatorios_alunos r
                 INNER JOIN usuarios u ON u.id = r.professor_id
                 WHERE r.aluno_id = :aluno_id AND r.turma_id = :turma_id";
-        
+
         $params = [
             ':aluno_id' => $alunoId,
             ':turma_id' => $turmaId
         ];
+
+        if ($professorId) {
+            $sql .= " AND r.professor_id = :professor_id";
+            $params[':professor_id'] = $professorId;
+        }
 
         if ($tipo && $this->hasTipoColumn()) {
             $sql .= " AND r.tipo = :tipo";
@@ -60,18 +60,18 @@ class RelatorioAlunoModel extends BaseModel
         }
 
         $sql .= " ORDER BY r.criado_em DESC";
-        
+
         return $this->fetchAll($sql, $params);
     }
 
     public function listarPorTurma(int $turmaId, int $escolaId, ?string $tipo = null): array
     {
-        $sql = "SELECT r.*, p.nome_completo as professor_nome, a.nome_completo as aluno_nome 
+        $sql = "SELECT r.*, p.nome_completo as professor_nome, a.nome_completo as aluno_nome
                 FROM relatorios_alunos r
                 INNER JOIN usuarios p ON p.id = r.professor_id
                 LEFT JOIN usuarios a ON a.id = r.aluno_id
                 WHERE r.turma_id = :turma_id AND r.escola_id = :escola_id";
-        
+
         $params = [
             ':turma_id' => $turmaId,
             ':escola_id' => $escolaId
@@ -90,10 +90,15 @@ class RelatorioAlunoModel extends BaseModel
     public function adicionar(array $dados): bool
     {
         $hasTipo = $this->hasTipoColumn();
-        
-        $sql = "INSERT INTO relatorios_alunos (escola_id, aluno_id, professor_id, turma_id, conteudo" . ($hasTipo ? ", tipo" : "") . ") 
-                VALUES (:escola_id, :aluno_id, :professor_id, :turma_id, :conteudo" . ($hasTipo ? ", :tipo" : "") . ")";
-        
+
+        $sql = "INSERT INTO relatorios_alunos (
+                    escola_id, aluno_id, professor_id, turma_id, conteudo"
+                    . ($hasTipo ? ", tipo" : "") .
+               ") VALUES (
+                    :escola_id, :aluno_id, :professor_id, :turma_id, :conteudo"
+                    . ($hasTipo ? ", :tipo" : "") .
+               ")";
+
         $params = [
             ':escola_id' => $dados['escola_id'],
             ':aluno_id' => $dados['aluno_id'],
@@ -108,31 +113,37 @@ class RelatorioAlunoModel extends BaseModel
 
         return $this->execute($sql, $params);
     }
-    
-    public function buscarUltimoPorAluno($alunoId, $turmaId)
+
+    public function buscarUltimoPorAluno($alunoId, $turmaId, $professorId = null)
     {
-    $sql = "
-        SELECT *
-        FROM relatorios_alunos
-        WHERE aluno_id = :aluno_id
-        AND turma_id = :turma_id
-        ORDER BY criado_em DESC
-        LIMIT 1
-    ";
+        $sql = "
+            SELECT *
+            FROM relatorios_alunos
+            WHERE aluno_id = :aluno_id
+            AND turma_id = :turma_id
+        ";
 
-    $stmt = $this->pdo->prepare($sql);
+        $params = [
+            ':aluno_id' => $alunoId,
+            ':turma_id' => $turmaId
+        ];
 
-    $stmt->execute([
-        ':aluno_id' => $alunoId,
-        ':turma_id' => $turmaId
-    ]);
+        if ($professorId) {
+            $sql .= " AND professor_id = :professor_id";
+            $params[':professor_id'] = $professorId;
+        }
 
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+        $sql .= " ORDER BY criado_em DESC LIMIT 1";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
     public function buscarPorId(int $id): ?array
     {
-        $sql = "SELECT r.*, u.nome_completo as professor_nome 
+        $sql = "SELECT r.*, u.nome_completo as professor_nome
                 FROM relatorios_alunos r
                 INNER JOIN usuarios u ON u.id = r.professor_id
                 WHERE r.id = :id LIMIT 1";
