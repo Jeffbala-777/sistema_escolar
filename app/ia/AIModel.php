@@ -47,19 +47,50 @@ class AIModel extends BaseModel
                     'Content-Type: application/json',
                     'Authorization: Bearer ' . $apiKey
                 ],
-                CURLOPT_TIMEOUT => 60
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_CONNECTTIMEOUT => 20,
+                CURLOPT_FAILONERROR => false
             ]);
 
             $response = curl_exec($ch);
-            $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErrNo = curl_errno($ch);
+            $curlErr = curl_error($ch);
             curl_close($ch);
 
+            if ($response === false) {
+                return '❌ Erro de conexão com a API: ' . ($curlErr ?: 'desconhecido') . ' (cURL ' . $curlErrNo . ')';
+            }
+
+            if ($httpCode === 429) {
+                return '❌ Erro na API (HTTP 429): limite de requisições atingido. Aguarde alguns segundos e tente novamente.';
+            }
+
             if ($httpCode !== 200) {
-                return "❌ Erro na API (HTTP $httpCode)";
+                $extra = '';
+                $decodedError = json_decode((string)$response, true);
+                if (is_array($decodedError)) {
+                    $msg = $decodedError['error']['message'] ?? null;
+                    if ($msg) {
+                        $extra = ' - ' . $msg;
+                    }
+                }
+                return "❌ Erro na API (HTTP $httpCode)$extra";
             }
 
             $data = json_decode((string)$response, true);
-            return trim($data['choices'][0]['message']['content'] ?? '❌ Resposta vazia.');
+            if (!is_array($data)) {
+                return '❌ Resposta inválida da API.';
+            }
+
+            $content = $data['choices'][0]['message']['content'] ?? '';
+            $content = is_string($content) ? trim($content) : '';
+
+            if ($content === '') {
+                return '❌ Resposta vazia.';
+            }
+
+            return $content;
         } catch (Throwable $e) {
             return '❌ Erro: ' . $e->getMessage();
         }
@@ -82,14 +113,25 @@ Estrutura obrigatória:
 🏫 TURMA: [Nome] | 📚 DISCIPLINA: [Disciplina]
 
 📈 SITUAÇÃO GERAL: Classifique conforme a média geral (máximo 2 linhas).
-- Abaixo de 15 = Crítica
-- 15 a 19,9 = Atenção
-- 20 a 24,9 = Regular
-- 25 a 29,9 = Boa
-- 30+ = Muito Boa
-
+- Abaixo de 17 = Crítica.
+- 18 a 19,9 = Mediano(mas precia melhorar).
+- 20 a 24,9 = Regular.
+- 25 a 29,9 = Muito Bom.
+            
+Mas se for 📈 SITUAÇÃO GERAL 3 TRIMESTRE:            
+- Abaixo de 23.9 = Crítica.
+- 24.00 a 26.9 = Mediano.
+- 27 a 29.9 = Regular.
+- 30.0 a 40 = Muito Bom.
+            
+            
 📋 INDICADORES:
 Média Geral: X | Total de Faltas: X
+
+CLASSIFICAÇÃO POR FALTAS:
+- 0 a 4 faltas: normal.
+- 5 a 7 faltas: perigo.
+- Acima de 7 faltas: preocupante.
 
 CRITÉRIOS PARA CLASSIFICAÇÃO DE ALUNOS:
 
@@ -102,24 +144,44 @@ Se for 2º Trimestre ou posterior:
 - CRISE: Soma de notas < 36 (muito abaixo da média)
 - REVISÃO: Soma de notas entre 36 e 39,9
 - BOM: Soma de notas >= 40
+            
+Se for 3º Trimestre ou posterior:
+- CRISE: Soma de notas < 59 (muito abaixo da média) e avisa que ele está de recuperação final
+- BOM: Soma de notas >= 60 
 
+Se for Todos os Trimestre(caso tenha notas registradas do 1,2 ou 3 ele vai fazer):
+1º Trimestre:
+- CRISE: Nota < 18
+- REVISÃO: Nota entre 18 e 19,9
+- BOM: Nota >= 20
+
+2º Trimestre ou posterior:
+- CRISE: Soma de notas < 36 (muito abaixo da média)
+- REVISÃO: Soma de notas entre 36 e 39,9
+- BOM: Soma de notas >= 40
+            
+3º Trimestre ou posterior:
+- CRISE: Soma de notas < 59 (muito abaixo da média) e avisa que ele está de recuperação final
+- BOM: Soma de notas >= 60             
+(vai ter tudo isso no todos os periodos! se tiver pelo menos 6+ notas registradas pelo menos 1 ponto e se for 0 não conta!).
+            
 🚨 ALUNOS EM CRISE:
-Apenas os nomes separados por vírgula. Destaque se estão MUITO ABAIXO da média da turma. Se nenhum, escreva: Nenhum.
+Apenas os nomes ( separados por vírgula. Destaque se estão MUITO ABAIXO da média da turma. Se nenhum, escreva: Nenhum.
 
-💳 ALUNOS PARA REVISÃO:
+⚠️ MOTIVO DA CRISE:(faltas abaixo da média):
+(todos os nomes citados em alunos em crise vc bota aqui) Apenas os nomes + o motivo(ex: nana - notas, faltas ou os 2 juntos se for o caso), separados por vírgula. Se nenhum, escreva: Nenhum.
+            
+💳 ALUNOS PARA REVISÃO(notas ruins ou faltas ruins):
 Apenas os nomes separados por vírgula. Se nenhum, escreva: Nenhum.
 
 💵 ALUNOS COM BOM DESEMPENHO:
 Apenas os nomes separados por vírgula. Se nenhum, escreva: Nenhum.
-
-⚠️ ALUNOS COM FALTAS ALTAS (3 ou mais):
-Apenas os nomes separados por vírgula. Se nenhum, escreva: Nenhum.
-
+            
 💡 PONTOS POSITIVOS:
 Máximo 2 itens com 1-2 linhas cada.
 
 ⚠️ PONTOS DE ATENÇÃO:
-Máximo 2 itens com 1-2 linhas cada.
+Máximo 2 itens com 1-2 linhas cada.(caso 3 trimestre não precisa).
 
 🎯 SUGESTÕES PEDAGÓGICAS:
 Máximo 3 ações práticas com 1-2 linhas cada (ex: reforço, atividades, acompanhamento).
@@ -183,6 +245,11 @@ Se media_aluno for maior que {$notaMaxima}, use {$notaMaxima} como limite máxim
 INDICADORES ATUAIS:
 Nota Média: usar media_aluno
 Faltas: usar total_faltas
+
+CLASSIFICAÇÃO POR FALTAS:
+- 0 a 4 faltas: normal.
+- 5 a 7 faltas: perigo.
+- Acima de 7 faltas: preocupante.
 
 COMPARAÇÃO COM PERÍODOS ANTERIORES:
 Use exclusivamente os valores presentes em historico.

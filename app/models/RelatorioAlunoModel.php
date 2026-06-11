@@ -13,13 +13,25 @@ class RelatorioAlunoModel extends BaseModel
     private function checkAndFixSchema(): void
     {
         try {
-            $stmt = $this->pdo->query("SHOW COLUMNS FROM `relatorios_alunos` LIKE 'aluno_id'");
-            $column = $stmt->fetch(PDO::FETCH_ASSOC);
+            $colunasParaNull = ['aluno_id', 'professor_id'];
 
-            if ($column && $column['Null'] === 'NO') {
-                $this->pdo->exec("ALTER TABLE `relatorios_alunos` MODIFY `aluno_id` INT(10) UNSIGNED NULL");
+            foreach ($colunasParaNull as $coluna) {
+                $stmt = $this->pdo->query("SHOW COLUMNS FROM `relatorios_alunos` LIKE '{$coluna}'");
+                $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+
+                if ($column && isset($column['Null']) && $column['Null'] === 'NO') {
+                    $tipo = $column['Type'] ?? 'INT(10) UNSIGNED';
+                    $this->pdo->exec("ALTER TABLE `relatorios_alunos` MODIFY `{$coluna}` {$tipo} NULL");
+                }
             }
-        } catch (Exception $e) {
+
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM `relatorios_alunos` LIKE 'tipo'");
+            $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+
+            if (!$column) {
+                $this->pdo->exec("ALTER TABLE `relatorios_alunos` ADD COLUMN `tipo` VARCHAR(20) NULL AFTER `conteudo`");
+            }
+        } catch (Throwable $e) {
         }
     }
 
@@ -30,7 +42,7 @@ class RelatorioAlunoModel extends BaseModel
             try {
                 $stmt = $this->pdo->query("SHOW COLUMNS FROM `relatorios_alunos` LIKE 'tipo'");
                 $hasColumn = (bool)$stmt->fetch();
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $hasColumn = false;
             }
         }
@@ -89,29 +101,51 @@ class RelatorioAlunoModel extends BaseModel
 
     public function adicionar(array $dados): bool
     {
-        $hasTipo = $this->hasTipoColumn();
+        try {
+            $hasTipo = $this->hasTipoColumn();
 
-        $sql = "INSERT INTO relatorios_alunos (
-                    escola_id, aluno_id, professor_id, turma_id, conteudo"
-                    . ($hasTipo ? ", tipo" : "") .
-               ") VALUES (
-                    :escola_id, :aluno_id, :professor_id, :turma_id, :conteudo"
-                    . ($hasTipo ? ", :tipo" : "") .
-               ")";
+            $sql = "INSERT INTO relatorios_alunos (
+                        escola_id, aluno_id, professor_id, turma_id, conteudo"
+                        . ($hasTipo ? ", tipo" : "") .
+                   ") VALUES (
+                        :escola_id, :aluno_id, :professor_id, :turma_id, :conteudo"
+                        . ($hasTipo ? ", :tipo" : "") .
+                   ")";
 
-        $params = [
-            ':escola_id' => $dados['escola_id'],
-            ':aluno_id' => $dados['aluno_id'],
-            ':professor_id' => $dados['professor_id'],
-            ':turma_id' => $dados['turma_id'],
-            ':conteudo' => $dados['conteudo']
-        ];
+            $stmt = $this->pdo->prepare($sql);
 
-        if ($hasTipo) {
-            $params[':tipo'] = $dados['tipo'] ?? 'professor';
+            $escolaId = isset($dados['escola_id']) ? (int)$dados['escola_id'] : null;
+            $alunoId = isset($dados['aluno_id']) && $dados['aluno_id'] !== '' ? (int)$dados['aluno_id'] : null;
+            $professorId = isset($dados['professor_id']) && $dados['professor_id'] !== '' ? (int)$dados['professor_id'] : null;
+            $turmaId = isset($dados['turma_id']) ? (int)$dados['turma_id'] : null;
+            $conteudo = isset($dados['conteudo']) ? trim((string)$dados['conteudo']) : '';
+            $tipo = $hasTipo ? (string)($dados['tipo'] ?? 'professor') : null;
+
+            $stmt->bindValue(':escola_id', $escolaId, PDO::PARAM_INT);
+
+            if ($alunoId === null) {
+                $stmt->bindValue(':aluno_id', null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(':aluno_id', $alunoId, PDO::PARAM_INT);
+            }
+
+            if ($professorId === null) {
+                $stmt->bindValue(':professor_id', null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(':professor_id', $professorId, PDO::PARAM_INT);
+            }
+
+            $stmt->bindValue(':turma_id', $turmaId, PDO::PARAM_INT);
+            $stmt->bindValue(':conteudo', $conteudo, PDO::PARAM_STR);
+
+            if ($hasTipo) {
+                $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
+            }
+
+            return $stmt->execute();
+        } catch (Throwable $e) {
+            return false;
         }
-
-        return $this->execute($sql, $params);
     }
 
     public function buscarUltimoPorAluno($alunoId, $turmaId, $professorId = null)
